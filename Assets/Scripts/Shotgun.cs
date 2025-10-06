@@ -46,6 +46,9 @@ public class Shotgun : WeaponBase
             if (CanFire() && Time.time >= lastFireTime + delay)
             {
                 FireShotgunBlast();
+                PlayShootSound();
+                ApplyRecoil();
+                StartCoroutine(RecoilResetRoutine());
                 currentAmmoInMag--;
                 wm?.UpdateWeaponUI();
                 lastFireTime = Time.time;
@@ -57,7 +60,7 @@ public class Shotgun : WeaponBase
     private void FireShotgunBlast()
     {
         if (muzzleTransform == null) return;
-
+        isRecoiling = true;
         // Muzzle flash
         if (muzzleFlash != null)
         {

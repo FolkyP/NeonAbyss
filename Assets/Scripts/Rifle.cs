@@ -29,7 +29,7 @@ public class Rifle : WeaponBase
             StartCoroutine(FireRoutine());
         }
     }
-
+    
     public override void StopFire()
     {
         isFiring = false;
@@ -44,6 +44,9 @@ public class Rifle : WeaponBase
             if (CanFire() && Time.time >= lastFireTime + delay)
             {
                 FireLaser();
+                PlayShootSound();
+                ApplyRecoil();
+                StartCoroutine(RecoilResetRoutine());
                 currentAmmoInMag--;
                 wm?.UpdateWeaponUI();
                 lastFireTime = Time.time;
@@ -52,11 +55,12 @@ public class Rifle : WeaponBase
             yield return null;
         }
     }
+   
 
     private void FireLaser()
     {
         if (muzzleTransform == null) return;
-
+        isRecoiling = true;
         // Play muzzle flash
         if (muzzleFlash != null)
         {

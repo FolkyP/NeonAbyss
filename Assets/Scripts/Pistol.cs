@@ -35,6 +35,9 @@ public class Pistol : WeaponBase
         {
             // semi-auto: fire one shot per StartFire call
             TryFireOnce();
+            PlayShootSound();
+            ApplyRecoil();
+            StartCoroutine(RecoilResetRoutine());
         }
     }
 
@@ -68,7 +71,7 @@ public class Pistol : WeaponBase
     private void FireLaser()
     {
         if (muzzleTransform == null) return;
-
+        isRecoiling = true;
         // play muzzle flash if assigned
         if (muzzleFlash != null)
         {

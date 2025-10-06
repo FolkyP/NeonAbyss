@@ -39,6 +39,9 @@ public class GrenadeLauncher : WeaponBase
             if (CanFire() && Time.time >= lastFireTime + (1f / fireRate))
             {
                 FireGrenade();
+                PlayShootSound();
+                ApplyRecoil();
+                StartCoroutine(RecoilResetRoutine());
                 lastFireTime = Time.time;
             }
             yield return null;
@@ -48,7 +51,7 @@ public class GrenadeLauncher : WeaponBase
     private void FireGrenade()
     {
         if (grenadePrefab == null || muzzleTransform == null) return;
-
+        isRecoiling = true;
         // Spawn grenade
         GameObject grenade = Instantiate(grenadePrefab, muzzleTransform.position, muzzleTransform.rotation);
         grenade.AddComponent<GrenadeImpact>(); // Add impact script if not already on prefab

@@ -1089,6 +1089,11 @@ MonoBehaviour:
   currentAmmoInMag: 0
   reloadTime: 2
   isReloading: 0
+  recoilAmount: 1.35
+  recoilsmoothness: 4
+  isRecoiling: 0
+  shootSound: {fileID: 8300000, guid: 77dd6335b0cf1aa4897704013ae410e9, type: 3}
+  reloadSound: {fileID: 8300000, guid: 6aa92dbac508134488f6b60bc9283d8a, type: 3}
   fireRate: 10
   maxRange: 150
   laserDuration: 0.03
@@ -3092,6 +3097,11 @@ MonoBehaviour:
   currentAmmoInMag: 0
   reloadTime: 1.5
   isReloading: 0
+  recoilAmount: 8
+  recoilsmoothness: 6
+  isRecoiling: 0
+  shootSound: {fileID: 8300000, guid: 2157e673a524df24f9bb867ce1e04c39, type: 3}
+  reloadSound: {fileID: 8300000, guid: 8e08a01930bc1514abc656c24c33b63e, type: 3}
   pelletsPerShot: 8
   spreadAngle: 10
   fireRate: 1
@@ -4022,6 +4032,11 @@ MonoBehaviour:
   currentAmmoInMag: 0
   reloadTime: 1.5
   isReloading: 0
+  recoilAmount: 0.9
+  recoilsmoothness: 4
+  isRecoiling: 0
+  shootSound: {fileID: 8300000, guid: 397df409f735c1a49ba766c98f585802, type: 3}
+  reloadSound: {fileID: 8300000, guid: 413ad26524034a740a4cff73108cae6b, type: 3}
   fireRate: 3
   isAutomatic: 0
   maxRange: 100
@@ -9720,6 +9735,11 @@ MonoBehaviour:
   currentAmmoInMag: 0
   reloadTime: 3
   isReloading: 0
+  recoilAmount: 10
+  recoilsmoothness: 6
+  isRecoiling: 0
+  shootSound: {fileID: 8300000, guid: 364fdad5915606a46b88e0c3d026e822, type: 3}
+  reloadSound: {fileID: 8300000, guid: 7449c65326ea5e74695523097f25fcc6, type: 3}
   grenadePrefab: {fileID: 6503178973254977641, guid: f79b0508504b0904484d8468e4442417, type: 3}
   launchForce: 25
   fireRate: 1.2
