@@ -3,24 +3,35 @@ using UnityEngine;
 
 public class GrenadeLauncher : WeaponBase
 {
-    [Header("Grenade Launcher Settings")]
-    public GameObject grenadePrefab;
-    public float launchForce = 25f;
-    public float fireRate = 1f; // shots per second
-    public GameObject explosion;
+    [Header("Laser Settings")]
+    public LineRenderer lineRendererPrefab;
+    public float laserDuration = 0.05f;
+    public float fireRate = 5f;
+    public float maxDistance = 1000f;
+    public float damage = 25f;
+
+    [Header("FX Prefabs")]
+    public GameObject muzzleFlashPrefab;   // new
+    public GameObject hitEffectPrefab;     // stays for explosion / impact
+    public GameObject flash;
 
     private bool isFiring = false;
     private float lastFireTime;
-    WeaponManager wm;
+    private WeaponManager wm;
+    private Camera mainCam;
+
     private void Start()
     {
-         wm = FindObjectOfType<WeaponManager>();
+        wm = FindObjectOfType<WeaponManager>();
+        mainCam = Camera.main;
+
+        if (mainCam == null)
+            Debug.LogError("GrenadeLauncher: Main Camera not found!");
     }
-   
 
     public override void StartFire()
     {
-        if (!isFiring)
+        if (!isFiring && currentAmmoInMag > 0)
         {
             isFiring = true;
             StartCoroutine(FireRoutine());
@@ -38,60 +49,122 @@ public class GrenadeLauncher : WeaponBase
         {
             if (CanFire() && Time.time >= lastFireTime + (1f / fireRate))
             {
-                FireGrenade();
+                if (currentAmmoInMag <= 0)
+                {
+                    StopFire();
+                    yield break;
+                }
+
+                FireLaser();
                 PlayShootSound();
                 ApplyRecoil();
                 StartCoroutine(RecoilResetRoutine());
+
                 lastFireTime = Time.time;
             }
             yield return null;
         }
     }
 
-    private void FireGrenade()
+    private void FireLaser()
     {
-        if (grenadePrefab == null || muzzleTransform == null) return;
+        if (muzzleTransform == null || mainCam == null)
+            return;
+
         isRecoiling = true;
-        // Spawn grenade
-        GameObject grenade = Instantiate(grenadePrefab, muzzleTransform.position, muzzleTransform.rotation);
-        grenade.AddComponent<GrenadeImpact>(); // Add impact script if not already on prefab
-        grenade.GetComponent<GrenadeImpact>().explosionEffectPrefab = explosion;
-        // Get grenade rigidbody
-        Rigidbody rb = grenade.GetComponent<Rigidbody>();
-        if (rb != null)
+
+        // --- Raycast from camera center ---
+        Ray ray = mainCam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+        RaycastHit hit;
+        Vector3 targetPoint;
+
+        if (Physics.Raycast(ray, out hit, maxDistance))
         {
-            // Raycast from center of screen
-            Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-            RaycastHit hit;
-
-            Vector3 targetPoint;
-
-            if (Physics.Raycast(ray, out hit, 1000f))
-            {
-                targetPoint = hit.point; // aim at what the crosshair is pointing to
-            }
-            else
-            {
-                targetPoint = ray.GetPoint(1000f); // aim far away if nothing hit
-            }
-            
-            // Calculate direction from muzzle to target
-            Vector3 direction = (targetPoint - muzzleTransform.position).normalized;
-
-            // Launch grenade
-            rb.AddForce(direction * launchForce * 3, ForceMode.VelocityChange);
-
-            
+            targetPoint = hit.point;
+            HandleLaserImpact(hit);
+        }
+        else
+        {
+            targetPoint = ray.GetPoint(maxDistance);
         }
 
+        StartCoroutine(MuzzleFlashEffect());
+
+        // --- Apply ammo + UI ---
         currentAmmoInMag--;
-        
-        if (wm != null)
+        wm?.UpdateWeaponUI();
+    }
+
+    private IEnumerator MuzzleFlashEffect()
+    {
+        //if (lineRendererPrefab != null)
+        //{
+        //    LineRenderer flash = Instantiate(lineRendererPrefab, muzzleTransform.position, Quaternion.identity);
+        //    Vector3 flashEnd = muzzleTransform.position + muzzleTransform.forward * 0.3f;
+        //    flash.SetPosition(0, muzzleTransform.position);
+        //    flash.SetPosition(1, flashEnd);
+        //    flash.startWidth = 0.12f;
+        //    flash.endWidth = 0.12f;
+
+        //    if (flash.material != null)
+        //        flash.material.color = Color.green * 10f;
+
+        //    Destroy(flash.gameObject, laserDuration);
+        //}
+
+        if (muzzleFlashPrefab != null)
         {
-            wm.UpdateWeaponUI();
+            GameObject muzzleFX = Instantiate(
+                muzzleFlashPrefab,              // prefab
+                muzzleTransform.position,       // position at barrel tip
+                muzzleTransform.rotation        // rotation matches barrel
+            );
+
+            Destroy(muzzleFX, 0.3f);
         }
 
-        // Uncomment if you want sound support from WeaponBase
-        //PlayShootSound();
+
+        //Light flashLight = new GameObject("MuzzleLight").AddComponent<Light>();
+        //flashLight.type = LightType.Directional;
+        //flashLight.color = Color.green;
+        //flashLight.intensity = 3f;
+        //flashLight.range = .2f;
+
+        //// Position slightly in front of the muzzle to appear visually correct
+        //flashLight.transform.position = muzzleTransform.position;
+
+        
+
+        //Destroy(flashLight.gameObject, 0.05f);
+        var s = Instantiate(flash, muzzleTransform.position, muzzleTransform.rotation, muzzleTransform);
+        Destroy(s, 0.05f);
+
+        yield return null;
+    }
+
+
+    private void HandleLaserImpact(RaycastHit hit)
+    {
+        if (hitEffectPrefab != null)
+        {
+            GameObject impactFX = Instantiate(hitEffectPrefab, hit.point, Quaternion.LookRotation(hit.normal));
+            Destroy(impactFX, 0.5f);
+        }
+
+        // Trigger explosion logic
+        GrenadeImpact impact = new GameObject("LaserImpact").AddComponent<GrenadeImpact>();
+        impact.damage = damage;
+        impact.TriggerImpact(hit.point);
+        PlayerCam.Instance.Shake(0.2f, 0.5f);
+
+        Destroy(impact.gameObject, 1f);
+    }
+
+
+    private IEnumerator DisableLaserAfterDelay(LineRenderer lr, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        if (lr != null)
+            Destroy(lr.gameObject);
     }
 }

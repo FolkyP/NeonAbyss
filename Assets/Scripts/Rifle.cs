@@ -6,7 +6,7 @@ public class Rifle : WeaponBase
     [Header("Rifle Settings")]
     public float fireRate = 10f;            // shots per second
     public float maxRange = 150f;           // longer than pistol
-    public float laserDuration = 0.03f;     // shorter flash
+    public float laserDuration = 0.02f;     // shorter flash
     public float damage = 15f;              // lower damage than pistol, but faster fire
     public GameObject laserPrefab;          // prefab with LineRenderer
     public GameObject impactEffectPrefab;   // optional spark/explosion effect
@@ -44,6 +44,7 @@ public class Rifle : WeaponBase
             if (CanFire() && Time.time >= lastFireTime + delay)
             {
                 FireLaser();
+                PlayerCam.Instance.Shake(0.05f, 0.08f);
                 PlayShootSound();
                 ApplyRecoil();
                 StartCoroutine(RecoilResetRoutine());
@@ -55,13 +56,13 @@ public class Rifle : WeaponBase
             yield return null;
         }
     }
-   
+
 
     private void FireLaser()
     {
         if (muzzleTransform == null) return;
         isRecoiling = true;
-        // Play muzzle flash
+
         if (muzzleFlash != null)
         {
             var ps = muzzleFlash.GetComponent<ParticleSystem>();
@@ -69,51 +70,23 @@ public class Rifle : WeaponBase
             else StartCoroutine(EnableFlashBriefly());
         }
 
-        // Ray from center of screen
         Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
         RaycastHit hit;
         Vector3 targetPoint;
+        bool didHitTarget = false;
 
-        if (Physics.Raycast(ray, out hit, maxRange, targetMask))
+        if (Physics.Raycast(ray, out RaycastHit hits, maxRange, targetMask))
         {
-            targetPoint = hit.point;
+            hits.collider.gameObject.SendMessage("TakeDamage", damage, SendMessageOptions.DontRequireReceiver);
 
-            // Damage
-            hit.collider.gameObject.SendMessage("TakeDamage", damage, SendMessageOptions.DontRequireReceiver);
-
-            if (hit.rigidbody != null)
-                hit.rigidbody.AddForceAtPosition(ray.direction * 40f, hit.point, ForceMode.Impulse);
-
-            // Impact FX
-            if (impactEffectPrefab != null)
+            if (hits.collider.CompareTag("Enemy"))
             {
-                GameObject fx = Instantiate(impactEffectPrefab, hit.point, Quaternion.LookRotation(hit.normal));
-                Destroy(fx, 1.5f);
+                Hitmarker.Instance?.ShowHit(hits.point, damage);
             }
         }
-        else
-        {
-            targetPoint = ray.GetPoint(maxRange);
-        }
 
-        // Laser beam
-        if (laserPrefab != null)
-        {
-            GameObject go = Instantiate(laserPrefab);
-            LineRenderer lr = go.GetComponent<LineRenderer>();
-            if (lr != null)
-            {
-                lr.positionCount = 2;
-                lr.SetPosition(0, muzzleTransform.position);
-                lr.SetPosition(1, targetPoint);
-            }
-            Destroy(go, laserDuration);
-        }
-        else
-        {
-            StartCoroutine(TempLaserLine(muzzleTransform.position, targetPoint, laserDuration));
-        }
     }
+
 
     private IEnumerator EnableFlashBriefly()
     {

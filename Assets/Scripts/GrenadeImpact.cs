@@ -4,54 +4,67 @@ using UnityEngine;
 
 public class GrenadeImpact : MonoBehaviour
 {
-    [Header("Grenade Settings")]
+    [Header("Explosion Settings")]
     public float explosionRadius = 5f;
     public float explosionForce = 700f;
     public float damage = 50f;
-    public float lifetime = 5f; // auto-destroy if no impact
-
-    [Header("Effects")]
     public GameObject explosionEffectPrefab;
+    public AudioClip explosionSound;
 
-    private bool hasExploded = false;
-
-    private void Start()
+    public void TriggerImpact(Vector3 hitPosition)
     {
-        // Auto-destroy in case it never hits anything
-        Destroy(gameObject, lifetime);
-    }
-
-    private void OnCollisionEnter(Collision collision)
-    {
-        if (hasExploded) return;
-        hasExploded = true;
-
-        Explode();
-    }
-
-    private void Explode()
-    {
-        // Spawn explosion effect
+        // --- 1. Visual & Sound FX ---
         if (explosionEffectPrefab != null)
         {
-            Instantiate(explosionEffectPrefab, transform.position, Quaternion.identity);
+            GameObject fx = Instantiate(explosionEffectPrefab, hitPosition, Quaternion.identity);
+            LaserExplosionSphere effect = fx.GetComponent<LaserExplosionSphere>();
+            if (effect != null && explosionSound != null)
+                effect.PlaySound(explosionSound);
+            Destroy(fx, 1.5f);
         }
 
-        // Physics explosion
-        Collider[] colliders = Physics.OverlapSphere(transform.position, explosionRadius);
+        // --- 2. Physics & Damage ---
+        Collider[] colliders = Physics.OverlapSphere(hitPosition, explosionRadius);
+        bool anyEnemyHit = false;
+
         foreach (Collider nearby in colliders)
         {
+            if (nearby.CompareTag("Player"))
+                continue;
+
             Rigidbody rb = nearby.attachedRigidbody;
             if (rb != null)
-            {
-                rb.AddExplosionForce(explosionForce, transform.position, explosionRadius);
-            }
+                rb.AddExplosionForce(explosionForce, hitPosition, explosionRadius, 1f, ForceMode.Impulse);
 
-            // Example: if target has health script, apply damage
-            // var health = nearby.GetComponent<Health>();
-            // if (health != null) health.TakeDamage(damage);
+            // --- Damage falloff based on distance ---
+            float distance = Vector3.Distance(hitPosition, nearby.transform.position);
+            float falloff = Mathf.Clamp01(1f - distance / explosionRadius);
+            float finalDamage = damage * falloff;
+
+            if (finalDamage <= 0f)
+                continue;
+
+            // --- Apply damage ---
+            nearby.gameObject.SendMessage("TakeDamage", finalDamage, SendMessageOptions.DontRequireReceiver);
+
+            // --- Only show hitmarkers for enemies ---
+            if (nearby.CompareTag("Enemy"))
+            {
+                anyEnemyHit = true;
+
+                // Show floating damage number over each enemy hit
+                Hitmarker.Instance?.ShowHit(nearby.transform.position, finalDamage);
+            }
         }
 
-        Destroy(gameObject);
+        // --- 3. Central hitmarker flash (only once per explosion) ---
+        if (anyEnemyHit)
+        {
+            Hitmarker.Instance?.ShowHit(hitPosition, 0f);
+        }
+
+        // --- 4. Camera Shake for feedback ---
+        PlayerCam.Instance.Shake(0.3f, 0.5f);
     }
+
 }

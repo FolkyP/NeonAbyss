@@ -46,6 +46,7 @@ public abstract class WeaponBase : MonoBehaviour
         return !isReloading && currentAmmoInMag > 0;
     }
 
+    
 
     public virtual IEnumerator Reload()
     {

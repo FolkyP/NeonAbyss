@@ -37,6 +37,7 @@ public class Pistol : WeaponBase
             TryFireOnce();
             PlayShootSound();
             ApplyRecoil();
+            PlayerCam.Instance.Shake(0.1f, 0.1f);
             StartCoroutine(RecoilResetRoutine());
         }
     }
@@ -72,7 +73,8 @@ public class Pistol : WeaponBase
     {
         if (muzzleTransform == null) return;
         isRecoiling = true;
-        // play muzzle flash if assigned
+
+        // Muzzle flash
         if (muzzleFlash != null)
         {
             var ps = muzzleFlash.GetComponent<ParticleSystem>();
@@ -80,52 +82,24 @@ public class Pistol : WeaponBase
             else StartCoroutine(EnableFlashBriefly());
         }
 
-        // Ray from the center of the screen
         Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
         RaycastHit hit;
         Vector3 targetPoint;
 
-        if (Physics.Raycast(ray, out hit, maxRange, targetMask))
+        bool didHitTarget = false;
+
+        if (Physics.Raycast(ray, out RaycastHit hits, maxRange, targetMask))
         {
-            targetPoint = hit.point;
+            hits.collider.gameObject.SendMessage("TakeDamage", damage, SendMessageOptions.DontRequireReceiver);
 
-            // apply damage
-            hit.collider.gameObject.SendMessage("TakeDamage", damage, SendMessageOptions.DontRequireReceiver);
-
-            if (hit.rigidbody != null)
+            if (hits.collider.CompareTag("Enemy"))
             {
-                hit.rigidbody.AddForceAtPosition(ray.direction * 50f, hit.point, ForceMode.Impulse);
-            }
-
-            if (impactEffectPrefab != null)
-            {
-                GameObject fx = Instantiate(impactEffectPrefab, hit.point, Quaternion.LookRotation(hit.normal));
-                Destroy(fx, 2f);
+                Hitmarker.Instance?.ShowHit(hits.point, damage);
             }
         }
-        else
-        {
-            targetPoint = ray.GetPoint(maxRange);
-        }
 
-        // draw laser from muzzle to the hit point
-        if (laserPrefab != null)
-        {
-            GameObject go = Instantiate(laserPrefab);
-            LineRenderer lr = go.GetComponent<LineRenderer>();
-            if (lr != null)
-            {
-                lr.positionCount = 2;
-                lr.SetPosition(0, muzzleTransform.position); // start at muzzle
-                lr.SetPosition(1, targetPoint);              // end where ray hits
-            }
-            Destroy(go, laserDuration);
-        }
-        else
-        {
-            StartCoroutine(TempLaserLine(muzzleTransform.position, targetPoint, laserDuration));
-        }
     }
+
 
     private IEnumerator EnableFlashBriefly()
     {

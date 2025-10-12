@@ -5,10 +5,10 @@ public class Shotgun : WeaponBase
 {
     [Header("Shotgun Settings")]
     public int pelletsPerShot = 8;        // number of lasers fired per click
-    public float spreadAngle = 10f;       // degrees of spread cone
+    public float spreadAngle = 3f;       // degrees of spread cone
     public float fireRate = 1f;           // shots per second
     public float maxRange = 50f;          // shorter range than rifle/pistol
-    public float laserDuration = 0.05f;
+    public float laserDuration = 0.001f;
     public float damagePerPellet = 8f;    // damage for each pellet
     public GameObject laserPrefab;
     public GameObject impactEffectPrefab;
@@ -46,6 +46,7 @@ public class Shotgun : WeaponBase
             if (CanFire() && Time.time >= lastFireTime + delay)
             {
                 FireShotgunBlast();
+                PlayerCam.Instance.Shake(0.15f, 0.3f);
                 PlayShootSound();
                 ApplyRecoil();
                 StartCoroutine(RecoilResetRoutine());
@@ -78,58 +79,44 @@ public class Shotgun : WeaponBase
 
     private void ShootPellet()
     {
-        // Ray from screen center
-        Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+        if (muzzleTransform == null) return;
 
-        // Random spread
-        ray.direction = Quaternion.Euler(
+        Vector3 origin = muzzleTransform.position;
+
+        // Ray from camera center
+        Ray camRay = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+        Vector3 targetPoint;
+
+        if (Physics.Raycast(camRay, out RaycastHit hit, maxRange, targetMask))
+            targetPoint = hit.point;
+        else
+            targetPoint = camRay.GetPoint(maxRange);
+
+        // Direction from muzzle to target
+        Vector3 direction = (targetPoint - origin).normalized;
+
+        // apply spread
+        direction = Quaternion.Euler(
             Random.Range(-spreadAngle, spreadAngle),
             Random.Range(-spreadAngle, spreadAngle),
             0
-        ) * ray.direction;
+        ) * direction;
 
-        RaycastHit hit;
-        Vector3 targetPoint;
-
-        if (Physics.Raycast(ray, out hit, maxRange, targetMask))
+        // Raycast from muzzle along direction for actual pellet hit
+        bool didHitTarget = false;
+        if (Physics.Raycast(origin, direction, out RaycastHit finalHit, maxRange, targetMask))
         {
-            targetPoint = hit.point;
+            finalHit.collider.gameObject.SendMessage("TakeDamage", damagePerPellet, SendMessageOptions.DontRequireReceiver);
 
-            // Apply damage if object has Health
-            hit.collider.gameObject.SendMessage("TakeDamage", damagePerPellet, SendMessageOptions.DontRequireReceiver);
-
-            if (hit.rigidbody != null)
-                hit.rigidbody.AddForceAtPosition(ray.direction * 30f, hit.point, ForceMode.Impulse);
-
-            if (impactEffectPrefab != null)
+            if (finalHit.collider.CompareTag("Enemy"))
             {
-                GameObject fx = Instantiate(impactEffectPrefab, hit.point, Quaternion.LookRotation(hit.normal));
-                Destroy(fx, 1.5f);
+                Hitmarker.Instance?.ShowHit(finalHit.point, damagePerPellet);
             }
         }
-        else
-        {
-            targetPoint = ray.GetPoint(maxRange);
-        }
 
-        // Laser beam
-        if (laserPrefab != null)
-        {
-            GameObject go = Instantiate(laserPrefab);
-            LineRenderer lr = go.GetComponent<LineRenderer>();
-            if (lr != null)
-            {
-                lr.positionCount = 2;
-                lr.SetPosition(0, muzzleTransform.position);
-                lr.SetPosition(1, targetPoint);
-            }
-            Destroy(go, laserDuration);
-        }
-        else
-        {
-            StartCoroutine(TempLaserLine(muzzleTransform.position, targetPoint, laserDuration));
-        }
     }
+
+
 
     private IEnumerator EnableFlashBriefly()
     {
