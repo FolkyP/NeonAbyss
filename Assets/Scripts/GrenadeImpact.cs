@@ -10,6 +10,7 @@ public class GrenadeImpact : MonoBehaviour
     public float damage = 50f;
     public GameObject explosionEffectPrefab;
     public AudioClip explosionSound;
+    public bool dealSelfDamage = true;
 
     public void TriggerImpact(Vector3 hitPosition)
     {
@@ -23,20 +24,34 @@ public class GrenadeImpact : MonoBehaviour
             Destroy(fx, 1.5f);
         }
 
-        // --- 2. Physics & Damage ---
-        Collider[] colliders = Physics.OverlapSphere(hitPosition, explosionRadius);
-        bool anyEnemyHit = false;
+        // --- 2A. Physics Force (exclude player layer) ---
+        int forceMask = ~LayerMask.GetMask("Player");
+        Collider[] forceColliders = Physics.OverlapSphere(hitPosition, explosionRadius, forceMask, QueryTriggerInteraction.Ignore);
 
-        foreach (Collider nearby in colliders)
+        foreach (Collider nearby in forceColliders)
         {
-            if (nearby.CompareTag("Player"))
-                continue;
-
             Rigidbody rb = nearby.attachedRigidbody;
             if (rb != null)
                 rb.AddExplosionForce(explosionForce, hitPosition, explosionRadius, 1f, ForceMode.Impulse);
+        }
 
-            // --- Damage falloff based on distance ---
+        // --- 2B. Damage (include player) ---
+        int damageMask = ~0; // include everything
+        Collider[] damageColliders = Physics.OverlapSphere(hitPosition, explosionRadius, damageMask, QueryTriggerInteraction.Ignore);
+
+        HashSet<GameObject> damagedEnemies = new HashSet<GameObject>(); // Track already damaged enemies
+        bool anyEnemyHit = false;
+
+        foreach (Collider nearby in damageColliders)
+        {
+            GameObject rootObj = nearby.transform.root.gameObject; // Enemy root
+            bool isPlayer = nearby.CompareTag("Player") || rootObj.CompareTag("Player");
+
+            // Skip if this enemy already took damage from this explosion
+            if (!isPlayer && damagedEnemies.Contains(rootObj))
+                continue;
+
+            // --- Damage falloff ---
             float distance = Vector3.Distance(hitPosition, nearby.transform.position);
             float falloff = Mathf.Clamp01(1f - distance / explosionRadius);
             float finalDamage = damage * falloff;
@@ -44,26 +59,30 @@ public class GrenadeImpact : MonoBehaviour
             if (finalDamage <= 0f)
                 continue;
 
-            // --- Apply damage ---
-            nearby.gameObject.SendMessage("TakeDamage", finalDamage, SendMessageOptions.DontRequireReceiver);
-
-            // --- Only show hitmarkers for enemies ---
-            if (nearby.CompareTag("Enemy"))
+            if (isPlayer)
             {
-                anyEnemyHit = true;
+                if (dealSelfDamage)
+                    PlayerLife.Instance?.TakeDamage(Mathf.RoundToInt(finalDamage * 0.5f)); // half self-damage
+            }
+            else
+            {
+                damagedEnemies.Add(rootObj); // Mark as damaged
 
-                // Show floating damage number over each enemy hit
-                Hitmarker.Instance?.ShowHit(nearby.transform.position, finalDamage);
+                nearby.gameObject.SendMessage("TakeDamage", finalDamage, SendMessageOptions.DontRequireReceiver);
+
+                if (nearby.CompareTag("Enemy"))
+                {
+                    anyEnemyHit = true;
+                    Hitmarker.Instance?.ShowHit(nearby.transform.position, finalDamage, false);
+                }
             }
         }
 
-        // --- 3. Central hitmarker flash (only once per explosion) ---
+        // --- 3. Central hitmarker flash ---
         if (anyEnemyHit)
-        {
-            Hitmarker.Instance?.ShowHit(hitPosition, 0f);
-        }
+            Hitmarker.Instance?.ShowHit(hitPosition, 0f, false);
 
-        // --- 4. Camera Shake for feedback ---
+        // --- 4. Camera Shake ---
         PlayerCam.Instance.Shake(0.3f, 0.5f);
     }
 

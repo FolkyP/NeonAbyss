@@ -9,42 +9,62 @@ public class Hitmarker : MonoBehaviour
 
     [Header("UI References")]
     public Image hitmarkerImage;
+    public Image CritHitMarkerImage;
     public GameObject damagePopupPrefab;   // assign your TMP prefab here
     public Canvas popupCanvas;             // assign your main UI canvas
 
     [Header("Settings")]
     public float hitmarkerDuration = 0.2f;
     public AudioClip hitSound;
+    public AudioClip critSound;
 
-    private AudioSource audioSource;
+    
     private Coroutine hideRoutine;
 
     private void Awake()
     {
         Instance = this;
-        audioSource = GetComponent<AudioSource>();
         hitmarkerImage.enabled = false;
+        CritHitMarkerImage.enabled = false;
     }
 
-    public void ShowHit(Vector3 worldPosition, float damage)
+    public void ShowHit(Vector3 worldPosition, float damage,bool isCrit)
     {
         // --- Hitmarker flash ---
-        if (hitmarkerImage != null)
+        if (hitmarkerImage != null && !isCrit)
         {
             if (hideRoutine != null)
                 StopCoroutine(hideRoutine);
 
             hitmarkerImage.enabled = true;
+            AudioSettings.Instance?.PlaySFX(hitSound);
+            hideRoutine = StartCoroutine(HideHitmarkerAfterDelay());
+        }
+        if (CritHitMarkerImage != null && isCrit)
+        {
+            if (hideRoutine != null)
+                StopCoroutine(hideRoutine);
+
+            CritHitMarkerImage.enabled = true;
+            AudioSettings.Instance?.PlaySFX(critSound);
             hideRoutine = StartCoroutine(HideHitmarkerAfterDelay());
         }
 
-        if (hitSound != null)
-            audioSource?.PlayOneShot(hitSound);
+        
 
         // --- Floating damage number ---
         if (damagePopupPrefab != null && popupCanvas != null && damage > 0f)
         {
-            ShowDamagePopup(worldPosition, damage);
+            if (isCrit)
+            {
+                damagePopupPrefab.GetComponent<TMP_Text>().color = Color.red;
+                ShowDamagePopup(worldPosition, damage);
+            }
+            else
+            {
+                damagePopupPrefab.GetComponent<TMP_Text>().color = Color.cyan;
+                ShowDamagePopup(worldPosition, damage);
+            }
         }
     }
 
@@ -52,6 +72,7 @@ public class Hitmarker : MonoBehaviour
     {
         yield return new WaitForSeconds(hitmarkerDuration);
         hitmarkerImage.enabled = false;
+        CritHitMarkerImage.enabled = false;
     }
 
     private void ShowDamagePopup(Vector3 worldPos, float damage)

@@ -10,8 +10,11 @@ public class PlayerCam : MonoBehaviour
 
     public float sensX;
     public float sensY;
-
     public Transform orientation;
+    public Transform cameraPivot; //  The point around which the camera rotates (usually player head)
+    public float cameraDistance = 0.3f; //  Distance of camera from pivot
+    public LayerMask collisionMask; //  Layers the camera should not pass through
+    public float cameraRadius = 0.15f; //  For SphereCast to prevent clipping
 
     float rotationX;
     float rotationY;
@@ -22,8 +25,6 @@ public class PlayerCam : MonoBehaviour
     private void Awake()
     {
         Instance = this;
-        // cache the initial local position as a sensible default,
-        // but we'll capture the current baseline each time a shake starts.
         originalpos = transform.localPosition;
     }
 
@@ -54,25 +55,38 @@ public class PlayerCam : MonoBehaviour
         rotationY += mouseX;
         rotationX -= mouseY;
         rotationX = Mathf.Clamp(rotationX, -90f, 90f);
+
         transform.rotation = Quaternion.Euler(rotationX, rotationY, 0f);
         if (orientation != null)
             orientation.rotation = Quaternion.Euler(0f, rotationY, 0f);
 
-        // NOTE: Do NOT overwrite originalpos here every frame.
-        // originalpos will be captured when a shake starts so other camera motions (like bobbing)
-        // are respected.
+        HandleCameraCollision();
     }
 
-    /// <summary>
-    /// Start camera shake. Captures the camera's current local position as the baseline for the shake.
-    /// </summary>
+    private void HandleCameraCollision()
+    {
+        if (cameraPivot == null) return;
+
+        Vector3 desiredPosition = cameraPivot.position - transform.forward * cameraDistance;
+        Vector3 direction = desiredPosition - cameraPivot.position;
+
+        if (Physics.SphereCast(cameraPivot.position, cameraRadius, direction.normalized, out RaycastHit hit, cameraDistance, collisionMask))
+        {
+            // Move camera closer to avoid clipping
+            transform.position = hit.point + hit.normal * cameraRadius;
+        }
+        else
+        {
+            transform.position = desiredPosition;
+        }
+    }
+
     public void Shake(float duration, float magnitude)
     {
         if (shakeCoroutine != null)
         {
             StopCoroutine(shakeCoroutine);
         }
-        // capture current transform.localPosition as baseline so we don't fight other movement
         originalpos = transform.localPosition;
         shakeCoroutine = StartCoroutine(ShakeCoroutine(duration, magnitude));
     }
@@ -84,8 +98,6 @@ public class PlayerCam : MonoBehaviour
         while (elapsed < duration)
         {
             float strength = magnitude * (1.0f - (elapsed / duration));
-
-            // Use 2D circle to avoid moving forward/back along Z.
             Vector2 offset2D = Random.insideUnitCircle * strength;
             transform.localPosition = originalpos + new Vector3(offset2D.x, offset2D.y, 0f);
 
@@ -93,7 +105,6 @@ public class PlayerCam : MonoBehaviour
             yield return null;
         }
 
-        // restore to baseline
         transform.localPosition = originalpos;
         shakeCoroutine = null;
     }

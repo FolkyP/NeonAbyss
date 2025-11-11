@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -18,6 +19,21 @@ public class PlayerLife : MonoBehaviour
     public Text hpText; // or TMP_Text if using TextMeshPro
     public Slider shieldSlider;
     public Text shieldText; // or TMP_Text if using TextMeshPro
+
+    public static PlayerLife Instance;
+    private void Awake()
+    {
+        Instance = this;
+    }
+    private void Update()
+    {
+        // Check if player has fallen below a certain height
+        if (transform.position.y < -5f && !IsDead())
+        {
+            Debug.Log("Player Fell to Death!");
+            TakeDamage(maxHealth * 2);
+        }
+    }
 
     private void Start()
     {
@@ -48,6 +64,7 @@ public class PlayerLife : MonoBehaviour
         if (IsDead())
         {
             Debug.Log("Player Died!");
+            Time.timeScale = 0f; // Pause the game
             // Handle death (respawn/game over)
         }
     }

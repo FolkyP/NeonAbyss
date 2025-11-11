@@ -4,23 +4,21 @@ using UnityEngine;
 public class Pistol : WeaponBase
 {
     [Header("Pistol Settings")]
-    public float fireRate = 3f;            // shots per second (only used in automatic mode)
-    public bool isAutomatic = false;       // false = semi-auto (one shot per StartFire call)
+    public float fireRate = 3f;
+    public bool isAutomatic = false;
     public float maxRange = 100f;
-    public float laserDuration = 0.05f;   // how long the visible laser beam stays
     public float damage = 25f;
-    public GameObject laserPrefab;        // prefab with a LineRenderer on root (no particle system required)
-    public GameObject impactEffectPrefab; // optional effect to spawn on hit
 
-    // optional muzzle flash GameObject (enable/disable) — can be a short-lived object or particle system on the weapon
     public GameObject muzzleFlash;
+    public GameObject impactEffectPrefab;
 
     private bool isFiring = false;
     private WeaponManager wm;
+    public GameObject flash;
 
     void Start()
     {
-        wm = FindObjectOfType<WeaponManager>(); // used only for UpdateWeaponUI calls
+        wm = FindObjectOfType<WeaponManager>();
     }
 
     public override void StartFire()
@@ -33,12 +31,7 @@ public class Pistol : WeaponBase
         }
         else
         {
-            // semi-auto: fire one shot per StartFire call
             TryFireOnce();
-            PlayShootSound();
-            ApplyRecoil();
-            PlayerCam.Instance.Shake(0.1f, 0.1f);
-            StartCoroutine(RecoilResetRoutine());
         }
     }
 
@@ -56,17 +49,34 @@ public class Pistol : WeaponBase
             yield return new WaitForSeconds(delay);
         }
     }
+    private IEnumerator MuzzleFlashEffect()
+    {
+        //if (muzzleFlashPrefab != null)
+        //{
+        //    GameObject muzzleFX = Instantiate(muzzleFlashPrefab, muzzleTransform.position, muzzleTransform.rotation);
+        //    Destroy(muzzleFX, 0.3f);
+        //}
+        var s = Instantiate(flash, muzzleTransform.position, muzzleTransform.rotation, muzzleTransform);
+        Destroy(s, 0.05f);
 
+
+        yield return null;
+    }
     private void TryFireOnce()
     {
-        if (!CanFire()) return; // respects isReloading and currentAmmoInMag > 0
+        if (!CanFire()) return;
 
         FireLaser();
-        currentAmmoInMag--;
+
+        if (!infiniteAmmo)
+            carriedAmmo--; //  total ammo only
+
         wm?.UpdateWeaponUI();
 
-        // Optional: if you want automatic reload when emptied, uncomment:
-        // if (currentAmmoInMag <= 0 && carriedAmmo > 0) StartCoroutine(Reload());
+        PlayShootSound();
+        ApplyRecoil();
+        PlayerCam.Instance.Shake(0.1f, 0.1f);
+        StartCoroutine(RecoilResetRoutine());
     }
 
     private void FireLaser()
@@ -75,48 +85,36 @@ public class Pistol : WeaponBase
         isRecoiling = true;
 
         // Muzzle flash
-        if (muzzleFlash != null)
+        if (flash != null)
         {
-            var ps = muzzleFlash.GetComponent<ParticleSystem>();
-            if (ps != null) ps.Play();
-            else StartCoroutine(EnableFlashBriefly());
+            StartCoroutine(MuzzleFlashEffect());
         }
 
         Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-        RaycastHit hit;
-        Vector3 targetPoint;
 
-        bool didHitTarget = false;
-
-        if (Physics.Raycast(ray, out RaycastHit hits, maxRange, targetMask))
+        if (Physics.Raycast(ray, out RaycastHit hit, maxRange, targetMask))
         {
-            hits.collider.gameObject.SendMessage("TakeDamage", damage, SendMessageOptions.DontRequireReceiver);
+            hit.collider.gameObject.SendMessage("TakeDamage", damage, SendMessageOptions.DontRequireReceiver);
 
-            if (hits.collider.CompareTag("Enemy"))
+            if (hit.collider.CompareTag("Head"))
             {
-                Hitmarker.Instance?.ShowHit(hits.point, damage);
+                // pošli zprávu rodièi, kde je EnemyHealth
+                hit.collider.transform.root.SendMessage("TakeDamage", damage * 1.5f, SendMessageOptions.DontRequireReceiver);
+                Hitmarker.Instance?.ShowHit(hit.point, damage * 1.5f, true);
             }
+
+            if (hit.collider.CompareTag("Enemy"))
+                Hitmarker.Instance?.ShowHit(hit.point, Mathf.RoundToInt(damage), false);
+
+            if (impactEffectPrefab != null)
+                Instantiate(impactEffectPrefab, hit.point, Quaternion.LookRotation(hit.normal));
         }
-
     }
-
 
     private IEnumerator EnableFlashBriefly()
     {
         muzzleFlash.SetActive(true);
         yield return new WaitForSeconds(0.05f);
         muzzleFlash.SetActive(false);
-    }
-
-    private IEnumerator TempLaserLine(Vector3 start, Vector3 end, float duration)
-    {
-        GameObject go = new GameObject("TempLaser");
-        LineRenderer lr = go.AddComponent<LineRenderer>();
-        lr.positionCount = 2;
-        lr.SetPosition(0, start);
-        lr.SetPosition(1, end);
-        // Keep default material / color so you can style it in editor if needed
-        yield return new WaitForSeconds(duration);
-        Destroy(go);
     }
 }

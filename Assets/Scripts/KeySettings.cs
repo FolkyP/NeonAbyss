@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -25,7 +25,10 @@ public class KeySettings : MonoBehaviour
     public TMP_InputField overInput;
 
     private TMP_InputField activeInputField = null;
-    
+
+    public Text over;
+    public Text dash;
+
     // Default bindings (canonical names)
     private readonly Dictionary<string, KeyCode> defaultKeys = new Dictionary<string, KeyCode>()
     {
@@ -211,15 +214,38 @@ public class KeySettings : MonoBehaviour
 
     private void UpdateKeyInputs()
     {
-        // Use workingKeys to populate UI (so UI always reflects unsaved edits)
-        forwardInput.text = workingKeys.ContainsKey("Forward") ? workingKeys["Forward"].ToString() : defaultKeys["Forward"].ToString();
-        backwardInput.text = workingKeys.ContainsKey("Backward") ? workingKeys["Backward"].ToString() : defaultKeys["Backward"].ToString();
-        leftInput.text = workingKeys.ContainsKey("Left") ? workingKeys["Left"].ToString() : defaultKeys["Left"].ToString();
-        rightInput.text = workingKeys.ContainsKey("Right") ? workingKeys["Right"].ToString() : defaultKeys["Right"].ToString();
-        jumpInput.text = workingKeys.ContainsKey("Jump") ? workingKeys["Jump"].ToString() : defaultKeys["Jump"].ToString();
-        sprintInput.text = workingKeys.ContainsKey("Sprint") ? workingKeys["Sprint"].ToString() : defaultKeys["Sprint"].ToString();
-        dashInput.text = workingKeys.ContainsKey("Dash") ? workingKeys["Dash"].ToString() : defaultKeys["Dash"].ToString();
-        overInput.text = workingKeys.ContainsKey("Overdrive") ? workingKeys["Overdrive"].ToString() : defaultKeys["Overdrive"].ToString();
+        forwardInput.text = GetFriendlyKeyName(workingKeys.ContainsKey("Forward") ? workingKeys["Forward"] : defaultKeys["Forward"]);
+        backwardInput.text = GetFriendlyKeyName(workingKeys.ContainsKey("Backward") ? workingKeys["Backward"] : defaultKeys["Backward"]);
+        leftInput.text = GetFriendlyKeyName(workingKeys.ContainsKey("Left") ? workingKeys["Left"] : defaultKeys["Left"]);
+        rightInput.text = GetFriendlyKeyName(workingKeys.ContainsKey("Right") ? workingKeys["Right"] : defaultKeys["Right"]);
+        jumpInput.text = GetFriendlyKeyName(workingKeys.ContainsKey("Jump") ? workingKeys["Jump"] : defaultKeys["Jump"]);
+        sprintInput.text = GetFriendlyKeyName(workingKeys.ContainsKey("Sprint") ? workingKeys["Sprint"] : defaultKeys["Sprint"]);
+        dashInput.text = GetFriendlyKeyName(workingKeys.ContainsKey("Dash") ? workingKeys["Dash"] : defaultKeys["Dash"]);
+        overInput.text = GetFriendlyKeyName(workingKeys.ContainsKey("Overdrive") ? workingKeys["Overdrive"] : defaultKeys["Overdrive"]);
+
+        dash.text = GetFriendlyKeyName(workingKeys.ContainsKey("Dash") ? workingKeys["Dash"] : defaultKeys["Dash"]);
+        over.text = GetFriendlyKeyName(workingKeys.ContainsKey("Overdrive") ? workingKeys["Overdrive"] : defaultKeys["Overdrive"]);
+    }
+
+    private string GetFriendlyKeyName(KeyCode key)
+    {
+        switch (key)
+        {
+            case KeyCode.LeftControl: return "L Ctrl";
+            case KeyCode.RightControl: return "R Ctrl";
+            case KeyCode.LeftShift: return "L Shift";
+            case KeyCode.RightShift: return "R Shift";
+            case KeyCode.LeftAlt: return "L Alt";
+            case KeyCode.RightAlt: return "R Alt";
+            case KeyCode.Return: return "Enter";
+            case KeyCode.BackQuote: return "`";
+            case KeyCode.LeftArrow: return "←";
+            case KeyCode.RightArrow: return "→";
+            case KeyCode.UpArrow: return "↑";
+            case KeyCode.DownArrow: return "↓";
+            default:
+                return key.ToString();
+        }
     }
 
     private bool IsKeyAlreadyBoundWorking(KeyCode key)

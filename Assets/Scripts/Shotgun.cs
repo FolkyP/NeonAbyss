@@ -4,19 +4,17 @@ using UnityEngine;
 public class Shotgun : WeaponBase
 {
     [Header("Shotgun Settings")]
-    public int pelletsPerShot = 8;        // number of lasers fired per click
-    public float spreadAngle = 3f;       // degrees of spread cone
+    public int pelletsPerShot = 8;        // number of pellets fired per click
+    public float spreadAngle = 3f;        // degrees of spread cone
     public float fireRate = 1f;           // shots per second
-    public float maxRange = 50f;          // shorter range than rifle/pistol
-    public float laserDuration = 0.001f;
-    public float damagePerPellet = 8f;    // damage for each pellet
-    public GameObject laserPrefab;
-    public GameObject impactEffectPrefab;
+    public float maxRange = 50f;
+    public float damagePerPellet = 8f;    // damage per pellet
     public GameObject muzzleFlash;
 
     private bool isFiring = false;
     private float lastFireTime;
     private WeaponManager wm;
+    public GameObject flash;
 
     void Start()
     {
@@ -45,94 +43,97 @@ public class Shotgun : WeaponBase
         {
             if (CanFire() && Time.time >= lastFireTime + delay)
             {
+                if (flash != null)
+                {
+                    //var ps = muzzleFlash.GetComponent<ParticleSystem>();
+                    //if (ps != null) ps.Play();
+                    //else StartCoroutine(EnableFlashBriefly());
+                    StartCoroutine(MuzzleFlashEffect());
+                }
                 FireShotgunBlast();
                 PlayerCam.Instance.Shake(0.15f, 0.3f);
                 PlayShootSound();
                 ApplyRecoil();
                 StartCoroutine(RecoilResetRoutine());
-                currentAmmoInMag--;
+
+                if (!infiniteAmmo)
+                    carriedAmmo--; // 
+
                 wm?.UpdateWeaponUI();
                 lastFireTime = Time.time;
             }
+            else if (!CanFire())
+            {
+                Debug.Log("Click! Out of ammo!");
+            }
+
             yield return null;
         }
     }
+    private IEnumerator MuzzleFlashEffect()
+    {
+        //if (muzzleFlashPrefab != null)
+        //{
+        //    GameObject muzzleFX = Instantiate(muzzleFlashPrefab, muzzleTransform.position, muzzleTransform.rotation);
+        //    Destroy(muzzleFX, 0.3f);
+        //}
 
+            var s = Instantiate(flash, muzzleTransform.position , muzzleTransform.rotation, muzzleTransform);
+            Destroy(s, 0.05f);
+
+
+        yield return null;
+    }
     private void FireShotgunBlast()
     {
         if (muzzleTransform == null) return;
         isRecoiling = true;
+
         // Muzzle flash
-        if (muzzleFlash != null)
-        {
-            var ps = muzzleFlash.GetComponent<ParticleSystem>();
-            if (ps != null) ps.Play();
-            else StartCoroutine(EnableFlashBriefly());
-        }
-
-        // Fire multiple pellets
-        for (int i = 0; i < pelletsPerShot; i++)
-        {
-            ShootPellet();
-        }
-    }
-
-    private void ShootPellet()
-    {
-        if (muzzleTransform == null) return;
+        
 
         Vector3 origin = muzzleTransform.position;
-
-        // Ray from camera center
         Ray camRay = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-        Vector3 targetPoint;
+        Vector3 baseTarget = camRay.GetPoint(maxRange);
 
-        if (Physics.Raycast(camRay, out RaycastHit hit, maxRange, targetMask))
-            targetPoint = hit.point;
-        else
-            targetPoint = camRay.GetPoint(maxRange);
+        float totalDamage = 0f;
+        Vector3 hitPoint = baseTarget;
 
-        // Direction from muzzle to target
-        Vector3 direction = (targetPoint - origin).normalized;
-
-        // apply spread
-        direction = Quaternion.Euler(
-            Random.Range(-spreadAngle, spreadAngle),
-            Random.Range(-spreadAngle, spreadAngle),
-            0
-        ) * direction;
-
-        // Raycast from muzzle along direction for actual pellet hit
-        bool didHitTarget = false;
-        if (Physics.Raycast(origin, direction, out RaycastHit finalHit, maxRange, targetMask))
+        for (int i = 0; i < pelletsPerShot; i++)
         {
-            finalHit.collider.gameObject.SendMessage("TakeDamage", damagePerPellet, SendMessageOptions.DontRequireReceiver);
+            Vector3 direction = (baseTarget - origin).normalized;
 
-            if (finalHit.collider.CompareTag("Enemy"))
+            // Apply spread
+            float spreadX = Random.Range(-spreadAngle, spreadAngle);
+            float spreadY = Random.Range(-spreadAngle, spreadAngle);
+            direction = Quaternion.Euler(spreadY, spreadX, 0) * direction;
+
+            if (Physics.Raycast(origin, direction, out RaycastHit hit, maxRange, targetMask))
             {
-                Hitmarker.Instance?.ShowHit(finalHit.point, damagePerPellet);
+                if (hit.collider.CompareTag("Enemy"))
+                {
+                    float pelletDamage = damagePerPellet;
+
+                    // Headshot check
+                    if (hit.collider.CompareTag("Head"))
+                        pelletDamage *= 1.5f;
+
+                    totalDamage += pelletDamage;
+                    hitPoint = hit.point;
+
+                    hit.collider.gameObject.SendMessage("TakeDamage", Mathf.RoundToInt(pelletDamage), SendMessageOptions.DontRequireReceiver);
+                }
             }
         }
 
+        if (totalDamage > 0)
+            Hitmarker.Instance?.ShowHit(hitPoint, Mathf.RoundToInt(totalDamage), false);
     }
-
-
 
     private IEnumerator EnableFlashBriefly()
     {
         muzzleFlash.SetActive(true);
         yield return new WaitForSeconds(0.05f);
         muzzleFlash.SetActive(false);
-    }
-
-    private IEnumerator TempLaserLine(Vector3 start, Vector3 end, float duration)
-    {
-        GameObject go = new GameObject("TempLaser");
-        LineRenderer lr = go.AddComponent<LineRenderer>();
-        lr.positionCount = 2;
-        lr.SetPosition(0, start);
-        lr.SetPosition(1, end);
-        yield return new WaitForSeconds(duration);
-        Destroy(go);
     }
 }

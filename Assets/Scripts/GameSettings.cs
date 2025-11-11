@@ -23,6 +23,10 @@ public class GameSettings : MonoBehaviour
     public Button normalButton;
     public Button hardButton;
 
+    public GameObject easySelect;
+    public GameObject normalSelect;
+    public GameObject hardSelect;
+
 
     private Button selectedButton;
 
@@ -82,14 +86,20 @@ public class GameSettings : MonoBehaviour
     {
         selectedButton = button;
 
-        // Reset all
+        // Reset all button colors
         SetButtonNormalColor(easyButton, 0.3f);
         SetButtonNormalColor(normalButton, 0.3f);
         SetButtonNormalColor(hardButton, 0.3f);
 
-        // Highlight selected
+        // Highlight selected button
         SetButtonNormalColor(selectedButton, 1f);
+
+        // Toggle difficulty indicators
+        easySelect.SetActive(button == easyButton);
+        normalSelect.SetActive(button == normalButton);
+        hardSelect.SetActive(button == hardButton);
     }
+
 
     private void SetButtonNormalColor(Button button, float alpha)
     {

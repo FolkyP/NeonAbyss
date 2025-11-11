@@ -4,17 +4,15 @@ using UnityEngine;
 public class Rifle : WeaponBase
 {
     [Header("Rifle Settings")]
-    public float fireRate = 10f;            // shots per second
-    public float maxRange = 150f;           // longer than pistol
-    public float laserDuration = 0.02f;     // shorter flash
-    public float damage = 15f;              // lower damage than pistol, but faster fire
-    public GameObject laserPrefab;          // prefab with LineRenderer
-    public GameObject impactEffectPrefab;   // optional spark/explosion effect
-    public GameObject muzzleFlash;          // optional flash effect at barrel
+    public float fireRate = 10f;
+    public float maxRange = 150f;
+    public float damage = 15f;
+    public GameObject muzzleFlash;
 
     private bool isFiring = false;
     private float lastFireTime = 0f;
     private WeaponManager wm;
+    public GameObject flash;
 
     void Start()
     {
@@ -29,7 +27,7 @@ public class Rifle : WeaponBase
             StartCoroutine(FireRoutine());
         }
     }
-    
+
     public override void StopFire()
     {
         isFiring = false;
@@ -43,12 +41,12 @@ public class Rifle : WeaponBase
         {
             if (CanFire() && Time.time >= lastFireTime + delay)
             {
-                FireLaser();
+                FireShot();
                 PlayerCam.Instance.Shake(0.05f, 0.08f);
                 PlayShootSound();
                 ApplyRecoil();
                 StartCoroutine(RecoilResetRoutine());
-                currentAmmoInMag--;
+                if (!infiniteAmmo) carriedAmmo--;
                 wm?.UpdateWeaponUI();
                 lastFireTime = Time.time;
             }
@@ -57,52 +55,51 @@ public class Rifle : WeaponBase
         }
     }
 
-
-    private void FireLaser()
+    private void FireShot()
     {
-        if (muzzleTransform == null) return;
         isRecoiling = true;
-
-        if (muzzleFlash != null)
+        if (flash != null)
         {
-            var ps = muzzleFlash.GetComponent<ParticleSystem>();
-            if (ps != null) ps.Play();
-            else StartCoroutine(EnableFlashBriefly());
+            //var ps = muzzleFlash.GetComponent<ParticleSystem>();
+            //if (ps != null) ps.Play();
+            //else StartCoroutine(EnableFlashBriefly());
+            StartCoroutine(MuzzleFlashEffect());
         }
 
         Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-        RaycastHit hit;
-        Vector3 targetPoint;
-        bool didHitTarget = false;
-
-        if (Physics.Raycast(ray, out RaycastHit hits, maxRange, targetMask))
+        if (Physics.Raycast(ray, out RaycastHit hit, maxRange, targetMask))
         {
-            hits.collider.gameObject.SendMessage("TakeDamage", damage, SendMessageOptions.DontRequireReceiver);
-
-            if (hits.collider.CompareTag("Enemy"))
+            if (hit.collider.CompareTag("Enemy"))
             {
-                Hitmarker.Instance?.ShowHit(hits.point, damage);
+                hit.collider.SendMessage("TakeDamage", damage, SendMessageOptions.DontRequireReceiver);
+                Hitmarker.Instance?.ShowHit(hit.point, damage, false);
             }
+            else if (hit.collider.CompareTag("Head"))
+            {
+                // pošli zprávu rodièi, kde je EnemyHealth
+                hit.collider.transform.root.SendMessage("TakeDamage", damage * 1.5f, SendMessageOptions.DontRequireReceiver);
+                Hitmarker.Instance?.ShowHit(hit.point, damage * 1.5f, true);
+            }
+
         }
-
     }
+    private IEnumerator MuzzleFlashEffect()
+    {
+        //if (muzzleFlashPrefab != null)
+        //{
+        //    GameObject muzzleFX = Instantiate(muzzleFlashPrefab, muzzleTransform.position, muzzleTransform.rotation);
+        //    Destroy(muzzleFX, 0.3f);
+        //}
+            var s = Instantiate(flash, muzzleTransform.position, muzzleTransform.rotation, muzzleTransform);
+        Destroy(s, 0.05f);
 
 
+        yield return null;
+    }
     private IEnumerator EnableFlashBriefly()
     {
         muzzleFlash.SetActive(true);
         yield return new WaitForSeconds(0.05f);
         muzzleFlash.SetActive(false);
-    }
-
-    private IEnumerator TempLaserLine(Vector3 start, Vector3 end, float duration)
-    {
-        GameObject go = new GameObject("TempLaser");
-        LineRenderer lr = go.AddComponent<LineRenderer>();
-        lr.positionCount = 2;
-        lr.SetPosition(0, start);
-        lr.SetPosition(1, end);
-        yield return new WaitForSeconds(duration);
-        Destroy(go);
     }
 }

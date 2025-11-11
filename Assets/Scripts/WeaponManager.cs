@@ -1,19 +1,25 @@
-using System.Collections;
 using System.Collections.Generic;
+using TMPro;
+using UnityEngine.UI;
 using UnityEngine;
+using System.Collections;
+
 public class WeaponManager : MonoBehaviour
 {
     [SerializeField] GameSettings gameSettings;
     public List<WeaponBase> weapons = new List<WeaponBase>();
     int currentIndex = 0;
 
+    [SerializeField] public RawImage[] weaponCursors;
+    [SerializeField] private Image[] weaponImages;
+    [SerializeField] private TMP_Text[] weaponTexts;
+    [SerializeField] private RawImage[] weaponAmmo;
     [SerializeField] private float switchDuration = 0.2f;
-    [SerializeField] private float offscreenY = -1f; // start position below view
+    [SerializeField] private float offscreenY = -1f;
     private bool isSwitching = false;
 
     void Start()
     {
-        // Initialize all weapons
         for (int i = 0; i < weapons.Count; i++)
         {
             WeaponBase w = weapons[i];
@@ -26,73 +32,62 @@ public class WeaponManager : MonoBehaviour
             }
             else
             {
-                w.gameObject.SetActive(true); // temporarily activate to set position
+                w.gameObject.SetActive(true);
                 w.transform.localPosition = new Vector3(w.originalLocalPos.x, offscreenY, w.originalLocalPos.z);
                 w.gameObject.SetActive(false);
             }
         }
 
         UpdateWeaponUI();
+        UpdateWeaponOpacity();
     }
-
-
-
 
     void Update()
     {
         if (gameSettings.isGameStopped) return;
 
+        // number key switching
         for (int i = 0; i < weapons.Count; i++)
         {
-            if (Input.GetKeyDown(KeyCode.Alpha1 + i)) SwitchTo(i);
+            if (Input.GetKeyDown(KeyCode.Alpha1 + i))
+                SwitchTo(i);
         }
 
-
+        // scroll wheel switching
         float scroll = Input.GetAxis("Mouse ScrollWheel");
         if (scroll > 0f) SwitchTo((currentIndex + 1) % weapons.Count);
         if (scroll < 0f) SwitchTo((currentIndex - 1 + weapons.Count) % weapons.Count);
 
-
-        if (Input.GetButtonDown("Fire1")) weapons[currentIndex].StartFire();
-        if (Input.GetButtonUp("Fire1")) weapons[currentIndex].StopFire();
-        //if (Input.GetButtonDown("Fire2")) { /* aim or block */ }
-        if (Input.GetKeyDown(KeyCode.R) && !weapons[currentIndex].isReloading)
+        // fire
+        if (Input.GetButtonDown("Fire1"))
         {
-            StartCoroutine(weapons[currentIndex].Reload());
-            StartCoroutine(ReloadAnimation(weapons[currentIndex]));
-            UpdateWeaponUI();
+            WeaponBase currentWeapon = weapons[currentIndex];
+
+            if (currentWeapon.CanFire())
+                currentWeapon.StartFire();
+            else
+                Debug.Log("Click! No ammo!");
         }
 
+        if (Input.GetButtonUp("Fire1"))
+            weapons[currentIndex].StopFire();
     }
 
-
-    //void SwitchTo(int i)
-    //{
-    //    if (i < 0 || i >= weapons.Count) return;
-    //    weapons[currentIndex].StopFire();
-    //    weapons[currentIndex].gameObject.SetActive(false);
-    //    currentIndex = i;
-    //    weapons[currentIndex].gameObject.SetActive(true);
-
-    //    UpdateWeaponUI();
-    //}
     void SwitchTo(int i)
     {
         if (i < 0 || i >= weapons.Count || isSwitching || i == currentIndex)
-            return; // do nothing if switching to the same weapon or already switching
+            return;
 
         StartCoroutine(SwitchWeaponCoroutine(i));
     }
 
-
     public void UpdateWeaponUI()
     {
-        if (gameSettings != null && gameSettings.WeaponText != null)
+        WeaponBase w = weapons[currentIndex];
+        if (gameSettings != null && gameSettings.ammoText != null)
         {
-            gameSettings.WeaponText.text = weapons[currentIndex].weaponName;
-            gameSettings.ammoText.text = $"{weapons[currentIndex].currentAmmoInMag} / {weapons[currentIndex].magazineSize}";
-            gameSettings.allAmmo.text = $"{weapons[currentIndex].carriedAmmo}";
-
+            gameSettings.WeaponText.text = w.weaponName;
+            gameSettings.ammoText.text = w.infiniteAmmo ? "" : $"{w.carriedAmmo}";
         }
     }
 
@@ -104,13 +99,10 @@ public class WeaponManager : MonoBehaviour
         WeaponBase oldWeapon = weapons[currentIndex];
         WeaponBase newWeapon = weapons[newIndex];
 
-        // Stop firing old weapon
         oldWeapon.StopFire();
 
-        // Reset old weapon to original position
+        // Animation
         oldWeapon.transform.localPosition = oldWeapon.originalLocalPos;
-
-        // Move new weapon offscreen first
         newWeapon.transform.localPosition = new Vector3(newWeapon.originalLocalPos.x, offscreenY, newWeapon.originalLocalPos.z);
         newWeapon.gameObject.SetActive(true);
 
@@ -119,14 +111,12 @@ public class WeaponManager : MonoBehaviour
         {
             t += Time.deltaTime / switchDuration;
 
-            // Animate new weapon up
             newWeapon.transform.localPosition = Vector3.Lerp(
                 new Vector3(newWeapon.originalLocalPos.x, offscreenY, newWeapon.originalLocalPos.z),
                 newWeapon.originalLocalPos,
                 t
             );
 
-            // Animate old weapon down
             oldWeapon.transform.localPosition = Vector3.Lerp(
                 oldWeapon.originalLocalPos,
                 new Vector3(oldWeapon.originalLocalPos.x, offscreenY, oldWeapon.originalLocalPos.z),
@@ -141,52 +131,47 @@ public class WeaponManager : MonoBehaviour
 
         currentIndex = newIndex;
         UpdateWeaponUI();
+        UpdateCursor();
+        UpdateWeaponOpacity();
         isSwitching = false;
     }
-    public IEnumerator ReloadAnimation(WeaponBase weapon)
+
+    private void UpdateCursor()
     {
-        float duration = weapon.reloadTime;
-        Vector3 startPos = weapon.originalLocalPos;
-        Vector3 downPos = startPos + new Vector3(0f, -0.3f, 0f);
-
-        Quaternion startRot = weapon.transform.localRotation;
-        Quaternion forwardLeanRot = startRot * Quaternion.Euler(15f, 0f, 0f); // change axis if needed
-
-        float halfDuration = duration / 2f;
-
-        // Move down with lean
-        for (float t = 0f; t < halfDuration; t += Time.deltaTime)
+        for (int i = 0; i < weaponCursors.Length; i++)
         {
-            float normalized = t / halfDuration;
-            float smooth = Mathf.SmoothStep(0f, 1f, normalized);
-
-            weapon.transform.localPosition = Vector3.Lerp(startPos, downPos, smooth);
-            weapon.transform.localRotation = Quaternion.Lerp(startRot, forwardLeanRot, smooth);
-            yield return null;
+            weaponCursors[i].gameObject.SetActive(i == currentIndex);
         }
 
-        weapon.transform.localPosition = downPos;
-        weapon.transform.localRotation = forwardLeanRot;
-
-        // Move back up
-        for (float t = 0f; t < halfDuration; t += Time.deltaTime)
+        for (int i = 0; i < weaponAmmo.Length; i++)
         {
-            float normalized = t / halfDuration;
-            float smooth = Mathf.SmoothStep(0f, 1f, normalized);
-
-            weapon.transform.localPosition = Vector3.Lerp(downPos, startPos, smooth);
-            weapon.transform.localRotation = Quaternion.Lerp(forwardLeanRot, startRot, smooth);
-            yield return null;
+            weaponAmmo[i].gameObject.SetActive(i == currentIndex);
         }
-
-        weapon.transform.localPosition = startPos;
-        weapon.transform.localRotation = startRot;
     }
 
+    private void UpdateWeaponOpacity()
+    {
+        for (int i = 0; i < weaponImages.Length; i++)
+        {
+            if (weaponImages[i] == null) continue;
 
+            Color imgColor = weaponImages[i].color;
+            imgColor.a = (i == currentIndex) ? 1f : 100f / 255f;
+            weaponImages[i].color = imgColor;
 
+            if (weaponTexts[i] != null)
+            {
+                Color txtColor = weaponTexts[i].color;
+                txtColor.a = (i == currentIndex) ? 1f : 100f / 255f;
+                weaponTexts[i].color = txtColor;
+            }
 
-
-
-
+            if (weaponAmmo != null && i < weaponAmmo.Length && weaponAmmo[i] != null)
+            {
+                Color ammoColor = weaponAmmo[i].color;
+                ammoColor.a = (i == currentIndex) ? 1f : 100f / 255f;
+                weaponAmmo[i].color = ammoColor;
+            }
+        }
+    }
 }
