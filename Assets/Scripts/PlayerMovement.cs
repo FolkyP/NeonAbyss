@@ -46,7 +46,7 @@ public class PlayerMovement : MonoBehaviour
 
 
     public bool dashing;
-
+    public GameSettings gameSettings;
     void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -101,6 +101,7 @@ public class PlayerMovement : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if(gameSettings.isGameOn == false) return;
         grounded = Physics.Raycast(transform.position, Vector3.down, playerHeight * 0.5f + 0.3f, whatIsGround);
         MyInput();
         SpeedControl();

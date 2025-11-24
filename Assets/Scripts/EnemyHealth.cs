@@ -4,11 +4,15 @@ public class EnemyHealth : MonoBehaviour
 {
     [Header("Health Settings")]
     public float maxHealth = 100f;
-    private float currentHealth;
+    public float currentHealth;
 
+    private EnemyAI enemyAI;
+    private CrystalManager crystalManager;
     void Awake()
     {
         currentHealth = maxHealth;
+        enemyAI = GetComponent<EnemyAI>();
+        crystalManager = FindObjectOfType<CrystalManager>();
     }
 
     // This matches what your weapon is sending
@@ -19,14 +23,34 @@ public class EnemyHealth : MonoBehaviour
 
         if (currentHealth <= 0f)
         {
-            Die();
+            
+            if (enemyAI.enemyType == EnemyAI.EnemyType.Ranged)
+            {
+                Score.Instance.AddScore(15);
+
+                crystalManager.DropCrystals(transform.position);
+                enemyAI.RangedDead();
+
+                enemyAI.isDead = true;
+
+
+            }
+            if(enemyAI.enemyType == EnemyAI.EnemyType.Melee)
+            {
+                Score.Instance.AddScore(40);
+                crystalManager.DropCrystals(transform.position);
+                enemyAI.MeleeDead();
+                enemyAI.isDead = true;
+            }
+            if(enemyAI.enemyType == EnemyAI.EnemyType.Explosion)
+            {
+                //jestli je zabit, tak score add, jestli sam tak nn
+                Score.Instance.AddScore(20);
+                Destroy(gameObject);
+                enemyAI.isDead = true;
+            }
         }
     }
 
-    private void Die()
-    {
-        Debug.Log($"{gameObject.name} died!");
-        // Destroy the object (you can replace this with ragdoll, explosion, etc.)
-        Destroy(gameObject);
-    }
+    
 }

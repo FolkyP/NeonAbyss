@@ -44,6 +44,7 @@ public class WeaponManager : MonoBehaviour
 
     void Update()
     {
+        if (gameSettings.isGameOn == false) return;
         if (gameSettings.isGameStopped) return;
 
         // number key switching

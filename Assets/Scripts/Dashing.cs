@@ -32,6 +32,7 @@ public class Dashing : MonoBehaviour
     }
     private void Update()
     {
+        if (gameSettings.isGameOn == false) return;
         if (gameSettings.isGameStopped) return;
 
         if (Input.GetKeyDown(dashKey))

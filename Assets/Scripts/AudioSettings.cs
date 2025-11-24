@@ -28,6 +28,7 @@ public class AudioSettings : MonoBehaviour
     
     public AudioClip hover;
     public AudioClip click;
+    public AudioClip countDown;
 
     [Header("Audio Sources")]
     [Tooltip("Main background music source")]
@@ -48,7 +49,6 @@ public class AudioSettings : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
         }
         else
         {

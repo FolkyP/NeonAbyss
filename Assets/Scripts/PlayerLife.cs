@@ -20,6 +20,8 @@ public class PlayerLife : MonoBehaviour
     public Slider shieldSlider;
     public Text shieldText; // or TMP_Text if using TextMeshPro
 
+    public AudioClip damageSound;
+    
     public static PlayerLife Instance;
     private void Awake()
     {
@@ -49,6 +51,7 @@ public class PlayerLife : MonoBehaviour
 
     public void TakeDamage(int damage)
     {
+        AudioSettings.Instance.PlaySFX(damageSound);
         int shieldDamage = Mathf.Min(currentShield, damage);
         currentShield -= shieldDamage;
         damage -= shieldDamage;
@@ -64,6 +67,10 @@ public class PlayerLife : MonoBehaviour
         if (IsDead())
         {
             Debug.Log("Player Died!");
+            GameSettings.Instance.isGameOn = false;
+            GameSettings.Instance.isGameStopped = true;
+            GameSettings.Instance.Death();
+            
             Time.timeScale = 0f; // Pause the game
             // Handle death (respawn/game over)
         }

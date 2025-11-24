@@ -1,16 +1,19 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using System.Collections;
+using TMPro;
 
 public class GameSettings : MonoBehaviour
 {
-    [SerializeField] private bool isGameOn = false;
+    [SerializeField] public bool isGameOn = false;
     [SerializeField] public bool isGameStopped = false;
 
     public GameObject exitSc;
     public GameObject settingsMenu;
     public GameObject mainMenu;
     public GameObject playerUI;
+    public GameObject deathScreen;
 
     public GameObject selectMenu;
 
@@ -40,8 +43,21 @@ public class GameSettings : MonoBehaviour
     public Text ammoText;
     public Text WeaponText;
     public Text allAmmo;
+
+    [Header("UI References")]
+    public Text countdownText; // assign in Inspector
+
+    private bool hasStarted = false;
+
+    public static GameSettings Instance;
+
     private void Update()
     {
+        if (hasStarted && Input.GetKeyDown(KeyCode.Space))
+        {
+            StartCountDown();
+            hasStarted = false; // Prevent multiple starts
+        }
         if (isGameOn)
         {
             _frameCount++;
@@ -74,6 +90,7 @@ public class GameSettings : MonoBehaviour
     }
     void Start()
     {
+        Instance = this;
         easyButton.onClick.AddListener(() => SelectButton(easyButton));
         normalButton.onClick.AddListener(() => SelectButton(normalButton));
         hardButton.onClick.AddListener(() => SelectButton(hardButton));
@@ -189,32 +206,75 @@ public class GameSettings : MonoBehaviour
         if (selectedButton == easyButton)
         {
             Debug.Log("Starting game with Easy difficulty");
-            // Set game parameters for Easy difficulty
+            // Set parameters for easy
         }
         else if (selectedButton == normalButton)
         {
             Debug.Log("Starting game with Normal difficulty");
-            // Set game parameters for Normal difficulty
+            // Set parameters for normal
         }
         else if (selectedButton == hardButton)
         {
             Debug.Log("Starting game with Hard difficulty");
-            // Set game parameters for Hard difficulty
+            // Set parameters for hard
         }
+
         cameraUI.gameObject.SetActive(false);
+
         foreach (GameObject g in game)
-        {
             g.SetActive(true);
-        }
-        // Load the game scene or start the game
-        isGameOn = true;
-        Time.timeScale = 1f; // Ensure the game is running
+
         selectMenu.SetActive(false);
+        Time.timeScale = 1f; // pause while counting down
+        hasStarted = true;
     }
+
+    public void StartCountDown()
+    {
+        StartCoroutine(CountdownRoutine());
+    }
+
+    private IEnumerator CountdownRoutine()
+    {
+        int count = 3;
+        countdownText.gameObject.SetActive(true);
+        AudioSettings.Instance.PlaySFX(AudioSettings.Instance.countDown);
+        while (count > 0)
+        {
+            countdownText.text = count.ToString();
+            Debug.Log("Game starting in " + count);
+            yield return new WaitForSeconds(1f);
+            count--;
+        }
+
+        countdownText.text = "FIGHT!";
+        Debug.Log("GO!");
+        yield return new WaitForSeconds(1f);
+
+        countdownText.gameObject.SetActive(false);
+
+        // Now start the actual gameplay
+        isGameOn = true;
+        Time.timeScale = 1f;
+    }
+
     public void ExitScreen()
     {
         exitSc.SetActive(!exitSc.activeSelf);
     }
+    public void Death()
+    {
+        deathScreen.SetActive(true);
+    }
+    public void ReturnToMainMenu()
+    {
+        Time.timeScale = 1f;      // Reset time scale in case the game was paused
+        
+
+        // Reload the scene to reset all objects and variables
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
     public void ExitGame()
     {
         Application.Quit();
