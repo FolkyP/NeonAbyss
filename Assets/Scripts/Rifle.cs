@@ -67,20 +67,31 @@ public class Rifle : WeaponBase
         }
 
         Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-        if (Physics.Raycast(ray, out RaycastHit hit, maxRange, targetMask))
+
+        // Získáme VŠECHNY hity
+        RaycastHit[] hits = Physics.RaycastAll(ray, maxRange, targetMask);
+
+        // Seøadíme podle vzdálenosti
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+        foreach (var hit in hits)
         {
+            // CÍL JE ENEMY
             if (hit.collider.CompareTag("Enemy"))
             {
                 hit.collider.SendMessage("TakeDamage", damage, SendMessageOptions.DontRequireReceiver);
                 Hitmarker.Instance?.ShowHit(hit.point, damage, false);
-            }
-            else if (hit.collider.CompareTag("Head"))
-            {
-                // pošli zprávu rodièi, kde je EnemyHealth
-                hit.collider.transform.root.SendMessage("TakeDamage", damage * 1.5f, SendMessageOptions.DontRequireReceiver);
-                Hitmarker.Instance?.ShowHit(hit.point, damage * 1.5f, true);
+                continue;
             }
 
+            // CÍL JE HEADSHOT
+            if (hit.collider.CompareTag("Head"))
+            {
+                hit.collider.transform.root.SendMessage("TakeDamage", damage * 1.5f, SendMessageOptions.DontRequireReceiver);
+                Hitmarker.Instance?.ShowHit(hit.point, damage * 1.5f, true);
+                continue;
+            }
+
+            // cokoliv jiného ignorujeme úplnì
         }
     }
     private IEnumerator MuzzleFlashEffect()

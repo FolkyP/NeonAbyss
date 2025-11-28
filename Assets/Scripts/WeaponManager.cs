@@ -18,6 +18,9 @@ public class WeaponManager : MonoBehaviour
     [SerializeField] private float offscreenY = -1f;
     private bool isSwitching = false;
 
+    [Header("Ammo given by pickups per weapon")]
+    public int[] ammoPickupAmount = { 20, 10, 6, 5};
+
     void Start()
     {
         for (int i = 0; i < weapons.Count; i++)
@@ -149,6 +152,23 @@ public class WeaponManager : MonoBehaviour
             weaponAmmo[i].gameObject.SetActive(i == currentIndex);
         }
     }
+    public void AddAmmoToCurrentWeapon()
+    {
+        WeaponBase current = weapons[currentIndex];
+
+        if (current.infiniteAmmo)
+            return;
+
+        // Read amount from the ammo table
+        int amount = ammoPickupAmount[currentIndex];
+
+        current.carriedAmmo += amount;
+
+        Debug.Log($"Added {amount} ammo to {current.weaponName}");
+
+        UpdateWeaponUI();
+    }
+
 
     private void UpdateWeaponOpacity()
     {

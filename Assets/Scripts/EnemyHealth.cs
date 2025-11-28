@@ -28,7 +28,7 @@ public class EnemyHealth : MonoBehaviour
             {
                 Score.Instance.AddScore(15);
 
-                crystalManager.DropCrystals(transform.position);
+                crystalManager.Drop(transform.position);
                 enemyAI.RangedDead();
 
                 enemyAI.isDead = true;
@@ -38,7 +38,7 @@ public class EnemyHealth : MonoBehaviour
             if(enemyAI.enemyType == EnemyAI.EnemyType.Melee)
             {
                 Score.Instance.AddScore(40);
-                crystalManager.DropCrystals(transform.position);
+                crystalManager.Drop(transform.position);
                 enemyAI.MeleeDead();
                 enemyAI.isDead = true;
             }
@@ -46,6 +46,7 @@ public class EnemyHealth : MonoBehaviour
             {
                 //jestli je zabit, tak score add, jestli sam tak nn
                 Score.Instance.AddScore(20);
+                crystalManager.Drop(transform.position);
                 Destroy(gameObject);
                 enemyAI.isDead = true;
             }

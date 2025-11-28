@@ -51,6 +51,7 @@ public class GameSettings : MonoBehaviour
 
     public static GameSettings Instance;
 
+    public TMP_Text score;
     private void Update()
     {
         if (hasStarted && Input.GetKeyDown(KeyCode.Space))
@@ -115,6 +116,24 @@ public class GameSettings : MonoBehaviour
         easySelect.SetActive(button == easyButton);
         normalSelect.SetActive(button == normalButton);
         hardSelect.SetActive(button == hardButton);
+
+        score.color = Color.white;
+
+        if (button == easyButton)
+            score.color = Color.green;
+        else if (button == normalButton)
+            score.color = Color.yellow;
+        else if (button == hardButton)
+            score.color = Color.red;
+
+        if (button == easyButton)
+            PlayerPrefs.SetString("Difficulty", "Easy");
+        else if (button == normalButton)
+            PlayerPrefs.SetString("Difficulty", "Normal");
+        else if (button == hardButton)
+            PlayerPrefs.SetString("Difficulty", "Hard");
+
+        PlayerPrefs.Save();
     }
 
 
@@ -123,6 +142,7 @@ public class GameSettings : MonoBehaviour
         ColorBlock cb = button.colors;
         cb.normalColor = new Color(1f, 1f, 1f, alpha);
         button.colors = cb;
+        
 
         // Change all RawImages in children
         RawImage[] images = button.GetComponentsInChildren<RawImage>();
@@ -256,6 +276,14 @@ public class GameSettings : MonoBehaviour
         // Now start the actual gameplay
         isGameOn = true;
         Time.timeScale = 1f;
+    }
+    public string GetDifficultyKey()
+    {
+        if (selectedButton == easyButton)
+            return "Easy";
+        if (selectedButton == normalButton)
+            return "Normal";
+        return "Hard";
     }
 
     public void ExitScreen()

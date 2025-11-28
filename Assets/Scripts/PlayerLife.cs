@@ -78,15 +78,18 @@ public class PlayerLife : MonoBehaviour
 
     public void Heal(int amount)
     {
-        currentHealth = Mathf.Clamp(currentHealth + amount, 0, maxHealth);
+        // Clamp health between 0 and maxHealth
+        currentHealth = Mathf.Clamp(currentHealth + amount, 0, 200);
         UpdateUI();
     }
 
     public void AddShield(int amount)
     {
-        currentShield = Mathf.Clamp(currentShield + amount, 0, maxShield);
+        // Clamp shield between 0 and maxShield
+        currentShield = Mathf.Clamp(currentShield + amount, 0, 200);
         UpdateUI();
     }
+
 
     private void UpdateUI()
     {

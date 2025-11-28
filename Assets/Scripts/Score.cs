@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class Score : MonoBehaviour
 {
@@ -10,9 +11,9 @@ public class Score : MonoBehaviour
 
 
     public Text scoreText;
-    public Text bestScoreText;
+    public TMP_Text bestScoreText;
 
-    
+    private string difficultyKey;
 
     private void Awake()
     {
@@ -26,13 +27,28 @@ public class Score : MonoBehaviour
     
     void Start()
     {
-        // Naètení nejlepšího výsledku
-        maxScore = PlayerPrefs.GetInt("MaxScore", 0);
+        
+            string diff = PlayerPrefs.GetString("Difficulty", "Normal");
+            string difficultyKey = "MaxScore_" + diff;
+
+            maxScore = PlayerPrefs.GetInt(difficultyKey, 0);
+
+            if (bestScoreText != null)
+                bestScoreText.gameObject.SetActive(true);
+
+            bestScoreText.text = "Best score: " + maxScore + diff;
+        
+
+    }
+    public void OnDifficultyChanged()
+    {
+        string diff = PlayerPrefs.GetString("Difficulty", "Normal");
+        string difficultyKey = "MaxScore_" + diff;
+
+        maxScore = PlayerPrefs.GetInt(difficultyKey, 0);
 
         if (bestScoreText != null)
-            bestScoreText.text = "Best: " + maxScore;
-
-       
+            bestScoreText.text = "Best score: " + maxScore;
     }
 
     public void AddScore(int amount)
@@ -45,13 +61,18 @@ public class Score : MonoBehaviour
 
     public void SaveMaxScore()
     {
-        // Pokud je dosažen nový rekord
+        string diff = PlayerPrefs.GetString("Difficulty", "Normal");
+        string difficultyKey = "MaxScore_" + diff;
+
         if (score > maxScore)
         {
             maxScore = score;
-            PlayerPrefs.SetInt("MaxScore", maxScore);
+            PlayerPrefs.SetInt(difficultyKey, maxScore);
+            PlayerPrefs.Save();
         }
+        Debug.Log("scoreMax");
     }
 
-   
+
+
 }

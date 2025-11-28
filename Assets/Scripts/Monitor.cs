@@ -7,6 +7,9 @@ public class Monitor : MonoBehaviour
     public GameObject pressE_UI;
     public Material monitorOnMaterial;
 
+    public GameObject monitorSec;
+    public GameObject motirorTer;
+
     public Text timeText;
     public float countdown = 20f;
 
@@ -40,6 +43,8 @@ public class Monitor : MonoBehaviour
         timeText.gameObject.SetActive(false);
         pressE_UI.SetActive(false);
         monitorOnMaterial.color = Color.green;
+        monitorSec.GetComponent<MeshRenderer>().material.color = Color.green;
+        motirorTer.GetComponent<MeshRenderer>().material.color = Color.green;
         // Uloží pùvodní pozice
         leftClosedPos = leftDoor.localPosition;
         rightClosedPos = rightDoor.localPosition;
@@ -124,10 +129,15 @@ public class Monitor : MonoBehaviour
         hasBeenUsed = true;
         PlayerCam.Instance.Shake(5f, 0.5f);
         monitorOnMaterial.color = Color.red;
+        monitorSec.GetComponent<MeshRenderer>().material.color = Color.red;
+        motirorTer.GetComponent<MeshRenderer>().material.color = Color.red;
         timeText.gameObject.SetActive(true);
         countdownRunning = true;
 
         pressE_UI.SetActive(false);
+
+        if (SpawnManager.Instance != null)
+            SpawnManager.Instance.EnterPhase2();
     }
 
     private void EndCountdown()
@@ -138,7 +148,8 @@ public class Monitor : MonoBehaviour
         AudioSettings.Instance.PlaySFX(gate);
         gateCollider.enabled = false;
         timeText.gameObject.SetActive(false);
+        if (SpawnManager.Instance != null)
+            SpawnManager.Instance.StopAndKillAll();
 
-        
     }
 }

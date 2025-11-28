@@ -14,7 +14,7 @@ public class EnemyAI : MonoBehaviour
 
 
     [Header("References")]
-    public Transform player;              // odkaz na hráèe
+    public GameObject player;              // odkaz na hráèe
     private NavMeshAgent agent;
     private EnemyHealth enemyHealth;
     public Transform firePoint;
@@ -56,28 +56,22 @@ public class EnemyAI : MonoBehaviour
     [Header("Melee Death")]
     public float fallDuration = 1.2f;
     public float glowSpeed = 2f;          // rychlost rozsvícení
-    public float maxEmission = 4f;        // max intenzita
+    public float maxEmission = 2f;        // max intenzita
 
     public bool isDead = false;
 
-    [Header("Melee Death")]
+    [Header("ExploPref")]
 
     public GameObject target;       // GameObject, který se má otáèet
     public float rotationSpeedExplo = 10f;
-    public float explodeRange = 2f;
+    private float explodeRange = 2f;
     private void Start()
     {
         animator = GetComponent<Animator>();
         agent = GetComponent<NavMeshAgent>();
         enemyHealth = GetComponent<EnemyHealth>();
         startPosition = transform.position;  // uložíme startovní pozici
-        if (player == null)
-        {
-            // najdi hráèe podle tagu
-            GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
-            if (playerObj)
-                player = playerObj.transform;
-        }
+        
     }
   
     private void Update()
@@ -87,7 +81,7 @@ public class EnemyAI : MonoBehaviour
         if (GameSettings.Instance.isGameOn == false)
             return;
         
-        float distance = Vector3.Distance(transform.position, player.position);
+        float distance = Vector3.Distance(transform.position, player.gameObject.transform.position);
 
         if (enemyType == EnemyType.Melee && !isDead)
         {
@@ -95,7 +89,7 @@ public class EnemyAI : MonoBehaviour
             if (distance <= chaseRange)
             {
                 agent.isStopped = false;
-                agent.SetDestination(player.position);
+                agent.SetDestination(player.gameObject.transform.position);
             }
             else
             {
@@ -118,7 +112,7 @@ public class EnemyAI : MonoBehaviour
             // Vizuální rotace dítìte – OK
             if (target != null)
                 target.transform.Rotate(0f, 0f, rotationSpeedExplo * Time.deltaTime);
-
+            Debug.Log("targeti");
             // DÙLEŽITÉ: nech NavMeshAgent otáèet tìlo
             agent.updateRotation = true;
             agent.updatePosition = true;
@@ -126,7 +120,8 @@ public class EnemyAI : MonoBehaviour
             if (distance <= chaseRange)
             {
                 agent.isStopped = false;
-                agent.SetDestination(player.position);
+                agent.SetDestination(player.gameObject.transform.position);
+                Debug.Log(player.gameObject.transform.position.ToString());
 
                 if (distance <= explodeRange)
                 {
@@ -151,7 +146,7 @@ public class EnemyAI : MonoBehaviour
             RotateTowardsPlayer();
 
             lastAttackTime -= Time.deltaTime;
-            bool inRange = (player.position - transform.position).sqrMagnitude <= shootRange * shootRange;
+            bool inRange = (player.gameObject.transform.position - transform.position).sqrMagnitude <= shootRange * shootRange;
 
             if (lastAttackTime <= 0f && inRange)
             {
@@ -198,7 +193,7 @@ public class EnemyAI : MonoBehaviour
         // --- 1) VÝSKOK SMÌREM K HRÁÈI ---
         if (agent != null) agent.enabled = false;
         AudioSettings.Instance.PlaySFX(bounce);
-        Vector3 toPlayer = (player.position - transform.position).normalized;
+        Vector3 toPlayer = (player.gameObject.transform.position - transform.position).normalized;
         Vector3 jumpDir = (toPlayer + Vector3.up) * 0.3f;   
         float jumpDuration = 0.1f;
         float timer = 0f;
@@ -217,17 +212,18 @@ public class EnemyAI : MonoBehaviour
         AudioSettings.Instance.PlaySFX(Explo);
 
         // Damage hráèi
-        float dist = Vector3.Distance(transform.position, player.position);
+        float dist = Vector3.Distance(transform.position, player.gameObject.transform.position);
         if (dist < explodeRange)
         {
-            PlayerLife hp = player.GetComponent<PlayerLife>();
+            
+            PlayerLife hp = player.GetComponentInParent<PlayerLife>();
             if (hp != null) hp.TakeDamage(attackDamage * 2);
 
             // Knockback
             Rigidbody rb = player.GetComponent<Rigidbody>();
             if (rb != null)
             {
-                Vector3 knockDir = (player.position - transform.position).normalized;
+                Vector3 knockDir = (player.gameObject.transform.position - transform.position).normalized;
                 float knockForce = 5f; // nastav podle potøeby
                 rb.AddForce(knockDir * knockForce + Vector3.up * 2f, ForceMode.Impulse);
             }
@@ -260,7 +256,7 @@ public class EnemyAI : MonoBehaviour
     {
         if (player == null) return;
 
-        PlayerLife playerHealth = player.GetComponent<PlayerLife>();
+        PlayerLife playerHealth = player.GetComponentInParent<PlayerLife>();
         if (playerHealth != null)
         {
             playerHealth.TakeDamage(attackDamage);
@@ -282,7 +278,7 @@ public class EnemyAI : MonoBehaviour
         if (player == null) return;
 
         // Vypoèítej smìr k hráèi
-        Vector3 direction = player.position - transform.position;
+        Vector3 direction = player.gameObject.transform.position - transform.position;
 
         if (direction.sqrMagnitude < 0.001f) return;
 
@@ -298,7 +294,7 @@ public class EnemyAI : MonoBehaviour
         if (firePoint != null)
         {
             // Smìr z hlavnì k hráèi
-            Vector3 lookDir = player.position - firePoint.position;
+            Vector3 lookDir = player.gameObject.transform.position - firePoint.position;
 
             // Cílová rotace pro hlaveò
             Quaternion aimRotation = Quaternion.LookRotation(-lookDir);
@@ -316,7 +312,7 @@ public class EnemyAI : MonoBehaviour
             return;
 
         // Calculate direction from fire point to player
-        Vector3 direction = (player.position - firePoint.position).normalized;
+        Vector3 direction = (player.gameObject.transform.position - firePoint.position).normalized;
         direction.y += 0.055f; // slight upward adjustment if needed  
 
         AudioSettings.Instance.PlaySFX(shootSound);
