@@ -211,23 +211,16 @@ public class EnemyAI : MonoBehaviour
         SpawnInstantExplosion(transform.position + Vector3.up * 0.5f, Color.red);
         AudioSettings.Instance.PlaySFX(Explo);
 
-        // Damage hráèi
-        float dist = Vector3.Distance(transform.position, player.gameObject.transform.position);
+        float dist = Vector3.Distance(transform.position, player.transform.position);
         if (dist < explodeRange)
         {
-            
             PlayerLife hp = player.GetComponentInParent<PlayerLife>();
             if (hp != null) hp.TakeDamage(attackDamage * 2);
 
-            // Knockback
-            Rigidbody rb = player.GetComponent<Rigidbody>();
-            if (rb != null)
-            {
-                Vector3 knockDir = (player.gameObject.transform.position - transform.position).normalized;
-                float knockForce = 5f; // nastav podle potøeby
-                rb.AddForce(knockDir * knockForce + Vector3.up * 2f, ForceMode.Impulse);
-            }
+            // Optional: apply “visual knockback” on screen or camera shake instead of moving player
+            PlayerCam.Instance.Shake(0.3f, 0.5f);
         }
+
 
 
         // enemy zmizne hned

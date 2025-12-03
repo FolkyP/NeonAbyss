@@ -74,13 +74,41 @@ public class GrenadeLauncher : WeaponBase
         isRecoiling = true;
 
         Ray ray = mainCam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-        if (Physics.Raycast(ray, out RaycastHit hit, maxDistance, hitMask, QueryTriggerInteraction.Ignore))
+
+        // Get ALL hits
+        RaycastHit[] hits = Physics.RaycastAll(ray, maxDistance, hitMask, QueryTriggerInteraction.Ignore);
+
+        // Sort by distance
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
+        RaycastHit? bestHit = null;
+
+        foreach (var hit in hits)
         {
-            HandleImpact(hit);
+            // explode if hitting enemy
+            if (hit.collider.CompareTag("Enemy") || hit.collider.CompareTag("Head"))
+            {
+                bestHit = hit;
+                break;
+            }
+
+            // ignore everything else (walls, props)
+        }
+
+        if (bestHit.HasValue)
+        {
+            HandleImpact(bestHit.Value);
+        }
+        else
+        {
+            RaycastHit fallback;
+            if (Physics.Raycast(ray, out fallback, maxDistance, hitMask))
+                HandleImpact(fallback);
         }
 
         StartCoroutine(MuzzleFlashEffect());
     }
+
 
     private IEnumerator MuzzleFlashEffect()
     {

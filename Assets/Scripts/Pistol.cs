@@ -92,25 +92,32 @@ public class Pistol : WeaponBase
 
         Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
 
-        if (Physics.Raycast(ray, out RaycastHit hit, maxRange, targetMask))
+        RaycastHit[] hits = Physics.RaycastAll(ray, maxRange, targetMask);
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+       
+        foreach (var hit in hits)
         {
-            hit.collider.gameObject.SendMessage("TakeDamage", damage, SendMessageOptions.DontRequireReceiver);
-
-            if (hit.collider.CompareTag("Head"))
+            // CÍL JE ENEMY
+            if (hit.collider.CompareTag("Enemy"))
             {
-                // pošli zprávu rodièi, kde je EnemyHealth
-                hit.collider.transform.root.SendMessage("TakeDamage", damage * 1.5f, SendMessageOptions.DontRequireReceiver);
-                Hitmarker.Instance?.ShowHit(hit.point, damage * 1.5f, true);
+                hit.collider.SendMessage("TakeDamage", damage, SendMessageOptions.DontRequireReceiver);
+                Hitmarker.Instance?.ShowHit(hit.point, damage, false);
+                continue;
             }
 
-            if (hit.collider.CompareTag("Enemy"))
-                Hitmarker.Instance?.ShowHit(hit.point, Mathf.RoundToInt(damage), false);
-
+            // CÍL JE HEADSHOT
+            if (hit.collider.CompareTag("Head"))
+            {
+                hit.collider.transform.root.SendMessage("TakeDamage", damage * 1.5f, SendMessageOptions.DontRequireReceiver);
+                Hitmarker.Instance?.ShowHit(hit.point, damage * 1.5f, true);
+                continue;
+            }
             if (impactEffectPrefab != null)
                 Instantiate(impactEffectPrefab, hit.point, Quaternion.LookRotation(hit.normal));
+            // cokoliv jiného ignorujeme úplnì
         }
     }
-
+  
     private IEnumerator EnableFlashBriefly()
     {
         muzzleFlash.SetActive(true);

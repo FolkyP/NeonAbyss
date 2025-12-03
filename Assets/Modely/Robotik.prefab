@@ -1309,8 +1309,8 @@ BoxCollider:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Size: {x: 1.5163288, y: 1.6961274, z: 0.5729389}
-  m_Center: {x: 0.008816719, y: 1.0577588, z: 0.074362755}
+  m_Size: {x: 1.3555098, y: 1.6961274, z: 0.5051956}
+  m_Center: {x: 0.0122618675, y: 1.0577588, z: 0.08537674}
 --- !u!114 &1965485795646889973
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1353,7 +1353,7 @@ MonoBehaviour:
   explosionMaterial: {fileID: 2100000, guid: be54d34830d75fc44b94a49e119fc1e5, type: 2}
   chaseRange: 90
   attackRange: 2
-  attackDamage: 25
+  attackDamage: 5
   attackCooldown: 1.25
   shootRange: 50
   rotationSpeed: 10
@@ -1377,8 +1377,8 @@ NavMeshAgent:
   m_GameObject: {fileID: 1965485795646889935}
   m_Enabled: 1
   m_AgentTypeID: 0
-  m_Radius: 0.5
-  m_Speed: 7
+  m_Radius: 0.4
+  m_Speed: 6
   m_Acceleration: 8
   avoidancePriority: 50
   m_AngularSpeed: 140

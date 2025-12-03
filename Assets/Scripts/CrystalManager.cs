@@ -36,9 +36,10 @@ public class CrystalManager : MonoBehaviour
             
             crystal.transform.rotation = Quaternion.Euler(-90, 0, 0);
             crystal.AddComponent<CrystalItem>();
-            crystal.AddComponent<SphereCollider>();
-            crystal.GetComponent<SphereCollider>().isTrigger = true;
-            totalCrystals++;
+            SphereCollider col = crystal.AddComponent<SphereCollider>();
+            col.isTrigger = true;
+            col.radius = 0.1f;
+        totalCrystals++;
 
           
     }
@@ -57,7 +58,7 @@ public class CrystalManager : MonoBehaviour
     public void Drop(Vector3 pozice)
     {
         float random = Random.value;
-        if (random > .15f)
+        if (random <= .35f)
         {
             DropCrystals(pozice);
         }
@@ -83,18 +84,23 @@ public class CrystalManager : MonoBehaviour
         Vector3 vector3 = new Vector3(pozice.x, 0.15f, pozice.z);
         GameObject health = Instantiate(healthPrefab, vector3, Quaternion.identity);
         health.AddComponent<PowerUp>().type = PowerUp.PowerUpType.Health;
-        
-        health.AddComponent<SphereCollider>();
-        health.GetComponent<SphereCollider>().isTrigger = true;
+        health.GetComponent<PowerUp>().pick = pick;
+
+        SphereCollider col = health.AddComponent<SphereCollider>();
+        col.isTrigger = true;
+        col.radius = 1f;
     }
     public void DropAmmo(Vector3 pozice)
     {
         Vector3 vector3 = new Vector3(pozice.x, 0.15f, pozice.z);
         GameObject ammo = Instantiate(ammoPrefab, vector3, Quaternion.identity);
         ammo.AddComponent<PowerUp>().type = PowerUp.PowerUpType.Ammo;
+        ammo.GetComponent<PowerUp>().pick = pick;
 
-        ammo.AddComponent<SphereCollider>();
-        ammo.GetComponent<SphereCollider>().isTrigger = true;
+
+        SphereCollider col = ammo.AddComponent<SphereCollider>();
+        col.isTrigger = true;
+        col.radius = 1f;
     }
     public void DropShield(Vector3 pozice)
     {
@@ -102,8 +108,11 @@ public class CrystalManager : MonoBehaviour
         GameObject shield = Instantiate(shieldPrefab, vector3, Quaternion.identity);
        
         shield.AddComponent<PowerUp>().type = PowerUp.PowerUpType.Shield;
+        shield.GetComponent<PowerUp>().pick = pick;
 
-        shield.AddComponent<SphereCollider>();
-        shield.GetComponent<SphereCollider>().isTrigger = true;
+
+        SphereCollider col = shield.AddComponent<SphereCollider>();
+        col.isTrigger = true;
+        col.radius = 1f;
     }
 }

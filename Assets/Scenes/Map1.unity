@@ -2398,7 +2398,8 @@ MonoBehaviour:
   targetMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  carriedAmmo: 150
+  carriedAmmo: 175
+  maxAmmo: 175
   infiniteAmmo: 0
   recoilAmount: 1.35
   recoilsmoothness: 4
@@ -2407,7 +2408,7 @@ MonoBehaviour:
   shootSound: {fileID: 8300000, guid: 77dd6335b0cf1aa4897704013ae410e9, type: 3}
   fireRate: 10
   maxRange: 150
-  damage: 15
+  damage: 20
   muzzleFlash: {fileID: 0}
   flash: {fileID: 1978379883045141509, guid: 79f1b3014744adb46b321ad44fc291da, type: 3}
 --- !u!1 &94822252
@@ -7193,6 +7194,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   carriedAmmo: 36
+  maxAmmo: 36
   infiniteAmmo: 0
   recoilAmount: 8
   recoilsmoothness: 6
@@ -7203,7 +7205,7 @@ MonoBehaviour:
   spreadAngle: 10
   fireRate: 1
   maxRange: 50
-  damagePerPellet: 8
+  damagePerPellet: 12
   muzzleFlash: {fileID: 0}
   flash: {fileID: 1978379883045141509, guid: 114bb9b8f89721245b8fbee604711c61, type: 3}
 --- !u!1 &247142770
@@ -8561,6 +8563,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   carriedAmmo: 48
+  maxAmmo: 48
   infiniteAmmo: 0
   recoilAmount: 0.9
   recoilsmoothness: 4
@@ -17497,6 +17500,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxHealth: 100
   maxShield: 100
+  maxOverHealth: 200
+  maxOverShield: 200
   currentHealth: 0
   currentShield: 0
   hpSlider: {fileID: 580550032}
@@ -17576,7 +17581,7 @@ MonoBehaviour:
   crystalCount: 0
   totalCrystals: 0
   count: {fileID: 2070882108}
-  pick: {fileID: 8300000, guid: f8be8011d33abd546a836810c0107c1d, type: 3}
+  pick: {fileID: 8300000, guid: 10edcd0958b46c8498ed3bdc074ca206, type: 3}
 --- !u!114 &698903403
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17595,7 +17600,7 @@ MonoBehaviour:
   - {fileID: 8771976554427552771, guid: c280175e17acef441831db05ef44fe9f, type: 3}
   autoFindSpawnPoints: 1
   spawnPoints: []
-  spawnIntervalPhase1: 5
+  spawnIntervalPhase1: 4
   maxActiveEnemies: 12
   spawnPerWave: 1
   inPhase2: 0
@@ -21167,6 +21172,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 256
   carriedAmmo: 18
+  maxAmmo: 18
   infiniteAmmo: 0
   recoilAmount: 10
   recoilsmoothness: 6
@@ -21178,7 +21184,7 @@ MonoBehaviour:
     m_Bits: 375
   fireRate: 1.2
   maxDistance: 1000
-  damage: 25
+  damage: 75
   muzzleFlashPrefab: {fileID: 0}
   hitEffectPrefab: {fileID: 6040306755782802686, guid: a968bb2db63300c4191d2923f8882e89, type: 3}
   flash: {fileID: 1978379883045141509, guid: adb65147cb65d0f40b936ba223e4fb83, type: 3}
@@ -35099,7 +35105,7 @@ MonoBehaviour:
   monitorSec: {fileID: 620519047}
   motirorTer: {fileID: 1552966759}
   timeText: {fileID: 390370636}
-  countdown: 10
+  countdown: 60
   gate: {fileID: 8300000, guid: 76a95eca37f91834a90cc6dde333fa4e, type: 3}
   beep: {fileID: 8300000, guid: a7386de8af57af44e9a3e8306c6ed594, type: 3}
   leftDoor: {fileID: 2067373112}
@@ -45418,6 +45424,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxHealth: 100
   maxShield: 100
+  maxOverHealth: 200
+  maxOverShield: 200
   currentHealth: 0
   currentShield: 0
   hpSlider: {fileID: 580550032}

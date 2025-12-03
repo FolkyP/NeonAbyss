@@ -18,6 +18,7 @@ public class PowerUp : MonoBehaviour
     public float rotateSpeed = 90f;
     public float floatAmplitude = 0.2f;
     public float floatFrequency = 2f;
+    public AudioClip pick;
 
     private Vector3 startPos;
 
@@ -55,6 +56,11 @@ public class PowerUp : MonoBehaviour
         WeaponManager weaponManager = other.GetComponentInParent<WeaponManager>();
 
         ApplyPowerUp(life,weaponManager);
+
+        if (pick != null)
+        {
+            AudioSettings.Instance.PlaySFX(pick);
+        }
         Destroy(gameObject);
     }
 

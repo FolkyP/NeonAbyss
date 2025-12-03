@@ -89,46 +89,62 @@ public class Shotgun : WeaponBase
         if (muzzleTransform == null) return;
         isRecoiling = true;
 
-        // Muzzle flash
-        
-
         Vector3 origin = muzzleTransform.position;
         Ray camRay = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
         Vector3 baseTarget = camRay.GetPoint(maxRange);
 
         float totalDamage = 0f;
-        Vector3 hitPoint = baseTarget;
+        Vector3 lastHitPoint = baseTarget;
 
         for (int i = 0; i < pelletsPerShot; i++)
         {
+            // Base shooting direction
             Vector3 direction = (baseTarget - origin).normalized;
 
-            // Apply spread
+            // Add spread
             float spreadX = Random.Range(-spreadAngle, spreadAngle);
             float spreadY = Random.Range(-spreadAngle, spreadAngle);
             direction = Quaternion.Euler(spreadY, spreadX, 0) * direction;
 
-            if (Physics.Raycast(origin, direction, out RaycastHit hit, maxRange, targetMask))
+            // Get ALL hits (ignores walls)
+            RaycastHit[] hits = Physics.RaycastAll(origin, direction, maxRange, targetMask);
+
+            // Sort by distance
+            System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
+            foreach (var hit in hits)
             {
+                // ENEMY body
                 if (hit.collider.CompareTag("Enemy"))
                 {
-                    float pelletDamage = damagePerPellet;
+                    float dmg = damagePerPellet;
+                    hit.collider.SendMessage("TakeDamage", dmg, SendMessageOptions.DontRequireReceiver);
 
-                    // Headshot check
-                    if (hit.collider.CompareTag("Head"))
-                        pelletDamage *= 1.5f;
-
-                    totalDamage += pelletDamage;
-                    hitPoint = hit.point;
-
-                    hit.collider.gameObject.SendMessage("TakeDamage", Mathf.RoundToInt(pelletDamage), SendMessageOptions.DontRequireReceiver);
+                    totalDamage += dmg;
+                    lastHitPoint = hit.point;
+                    break; // pellet stops after enemy
                 }
+
+                // HEADSHOT
+                if (hit.collider.CompareTag("Head"))
+                {
+                    float dmg = damagePerPellet * 1.5f;
+                    hit.collider.transform.root.SendMessage("TakeDamage", dmg, SendMessageOptions.DontRequireReceiver);
+
+                    totalDamage += dmg;
+                    lastHitPoint = hit.point;
+                    break;
+                }
+
+                // Ignore everything else completely
             }
         }
 
+        // Show combined hitmarker if any pellet hit
         if (totalDamage > 0)
-            Hitmarker.Instance?.ShowHit(hitPoint, Mathf.RoundToInt(totalDamage), false);
+            Hitmarker.Instance?.ShowHit(lastHitPoint, Mathf.RoundToInt(totalDamage), false);
     }
+
 
     private IEnumerator EnableFlashBriefly()
     {

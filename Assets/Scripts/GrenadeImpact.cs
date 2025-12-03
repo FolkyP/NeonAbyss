@@ -17,6 +17,8 @@ public class GrenadeImpact : MonoBehaviour
         // --- 1. Visual & Sound FX ---
         if (explosionEffectPrefab != null)
         {
+            hitPosition.y += 0.1f;
+
             GameObject fx = Instantiate(explosionEffectPrefab, hitPosition, Quaternion.identity);
             LaserExplosionSphere effect = fx.GetComponent<LaserExplosionSphere>();
             if (effect != null && explosionSound != null)

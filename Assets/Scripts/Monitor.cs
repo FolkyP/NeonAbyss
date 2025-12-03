@@ -37,7 +37,7 @@ public class Monitor : MonoBehaviour
     private Vector3 rightOpenPos;
 
     private float nextBeepTime = 0f;   //  kontrola pípnutí
-
+    private WeaponManager weaponManager;
     private void Start()
     {
         timeText.gameObject.SetActive(false);
@@ -52,6 +52,11 @@ public class Monitor : MonoBehaviour
         // Vypoèítá pozice otevøení
         leftOpenPos = leftClosedPos + leftDoorOffset;
         rightOpenPos = rightClosedPos + rightDoorOffset;
+
+        weaponManager = FindObjectOfType<WeaponManager>();
+        if (weaponManager == null)
+            Debug.LogWarning("WeaponManager not found in the scene!");
+
     }
 
     private void OnTriggerEnter(Collider other)
@@ -135,6 +140,9 @@ public class Monitor : MonoBehaviour
         countdownRunning = true;
 
         pressE_UI.SetActive(false);
+
+        if (weaponManager != null)
+            weaponManager.LoadAllGuns();
 
         if (SpawnManager.Instance != null)
             SpawnManager.Instance.EnterPhase2();

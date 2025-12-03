@@ -814,7 +814,7 @@ MonoBehaviour:
   explosionMaterial: {fileID: 2100000, guid: ac0b1c861e450114dbdc051330573782, type: 2}
   chaseRange: 10
   attackRange: 2
-  attackDamage: 20
+  attackDamage: 5
   attackCooldown: 1.5
   shootRange: 80
   rotationSpeed: 10
@@ -829,7 +829,6 @@ MonoBehaviour:
   isDead: 0
   target: {fileID: 0}
   rotationSpeedExplo: 10
-  explodeRange: 1.5
 --- !u!114 &2796174792716545838
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -842,7 +841,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff08670912e2e1a4882df26d1574e6d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 100
+  maxHealth: 50
   currentHealth: 0
 --- !u!195 &2796174792716545839
 NavMeshAgent:

@@ -19,7 +19,7 @@ public class WeaponManager : MonoBehaviour
     private bool isSwitching = false;
 
     [Header("Ammo given by pickups per weapon")]
-    public int[] ammoPickupAmount = { 20, 10, 6, 5};
+    public int[] ammoPickupAmount = { 40, 20, 10, 5};
 
     void Start()
     {
@@ -165,6 +165,16 @@ public class WeaponManager : MonoBehaviour
         current.carriedAmmo += amount;
 
         Debug.Log($"Added {amount} ammo to {current.weaponName}");
+
+        UpdateWeaponUI();
+    }
+    public void LoadAllGuns()
+    {
+        foreach (var weapon in weapons)
+        {
+            if (weapon.carriedAmmo < weapon.maxAmmo)
+                weapon.carriedAmmo = weapon.maxAmmo;
+        }
 
         UpdateWeaponUI();
     }
