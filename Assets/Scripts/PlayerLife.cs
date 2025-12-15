@@ -79,7 +79,7 @@ public class PlayerLife : MonoBehaviour
             Time.timeScale = 0f;
         }
     }
-
+   
     public void Heal(int amount)
     {
         currentHealth = Mathf.Clamp(currentHealth + amount, 0, maxOverHealth);
@@ -104,17 +104,13 @@ public class PlayerLife : MonoBehaviour
         // Text shows overheal
         if (hpText != null)
         {
-            if (currentHealth > maxHealth)
-                hpText.text = $"{maxHealth} + {currentHealth - maxHealth}";
-            else
+            
                 hpText.text = $"{currentHealth}/{maxHealth}";
         }
 
         if (shieldText != null)
         {
-            if (currentShield > maxShield)
-                shieldText.text = $"{maxShield} + {currentShield - maxShield}";
-            else
+            
                 shieldText.text = $"{currentShield}/{maxShield}";
         }
     }

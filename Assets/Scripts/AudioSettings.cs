@@ -35,14 +35,17 @@ public class AudioSettings : MonoBehaviour
     [SerializeField] private AudioSource musicSource;
 
     [Tooltip("General sound effects source (UI, gameplay, etc.)")]
-    [SerializeField] private AudioSource sfxSource;
+    [SerializeField] private AudioSource sfxSource; // <-- TENTO POUŽÍVÁ ENEMY AI
+
+    [Tooltip("Dedicated UI sound effects source (Clicks, Hovers)")]
+    [SerializeField] public AudioSource uiSource; // <-- NOVÝ ZDROJ
     public void HoverSound()
     {
-        PlaySFX(hover);
+        PlayUISFX(hover);
     }
     public void ClickSound()
     {
-        PlaySFX(click);
+        PlayUISFX(click);
     }
     private void Awake()
     {
@@ -56,10 +59,18 @@ public class AudioSettings : MonoBehaviour
             return;
         }
     }
-    public void PlaySFX(AudioClip clip)
+    public void PlaySFX(AudioClip clip) // Tuto funkci volá EnemyAI, ale také UI (HoverSound, ClickSound)
     {
+        // Ponecháme PlaySFX pro kompatibilitu s EnemyAI, který používá sfxSource
         if (clip != null && sfxSource != null)
             sfxSource.PlayOneShot(clip);
+    }
+
+    // Nová funkce pro UI zvuky
+    private void PlayUISFX(AudioClip clip)
+    {
+        if (clip != null && uiSource != null)
+            uiSource.PlayOneShot(clip);
     }
     private void Start()
     {
@@ -116,6 +127,7 @@ public class AudioSettings : MonoBehaviour
     {
         float master = workingMaster / 100f;
         float music = workingMusic / 100f;
+
         float sfx = workingSfx / 100f;
 
         AudioListener.volume = master;
@@ -125,6 +137,9 @@ public class AudioSettings : MonoBehaviour
 
         if (sfxSource != null)
             sfxSource.volume = sfx;
+
+        if (uiSource != null)
+            uiSource.volume = sfx;
     }
 
     private void UpdateTexts()
@@ -182,6 +197,9 @@ public class AudioSettings : MonoBehaviour
         savedMaster = workingMaster;
         savedMusic = workingMusic;
         savedSfx = workingSfx;
+
+        // APLIKUJE NOVÉ HODNOTY OKAMŽITÌ, JAKO BY SE POHYBEM SLIDERU
+        ApplyVolumes();
     }
 
     // Cancel button

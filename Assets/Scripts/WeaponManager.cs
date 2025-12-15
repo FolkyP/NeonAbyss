@@ -168,18 +168,38 @@ public class WeaponManager : MonoBehaviour
 
         UpdateWeaponUI();
     }
-    public void LoadAllGuns()
+    
+public void LoadAllGuns()
     {
+        Debug.Log("Spouštím LoadAllGuns pro reset munice na hodnoty z Inspektoru.");
+
         foreach (var weapon in weapons)
         {
-            if (weapon.carriedAmmo < weapon.maxAmmo)
-                weapon.carriedAmmo = weapon.maxAmmo;
+            if (weapon.infiniteAmmo) continue;
+
+            if (weapon.carriedAmmo < weapon.startingAmmoFromInspector)
+            {
+                weapon.carriedAmmo = weapon.startingAmmoFromInspector;
+            }
+
         }
 
         UpdateWeaponUI();
     }
 
+    public void ResetGun()
+    {
+        foreach (var weapon in weapons)
+        {
+            if (weapon.infiniteAmmo) continue;
 
+            
+                weapon.carriedAmmo = weapon.startingAmmoFromInspector;
+            
+
+        }
+        UpdateWeaponUI();
+    }
     private void UpdateWeaponOpacity()
     {
         for (int i = 0; i < weaponImages.Length; i++)

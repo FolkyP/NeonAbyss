@@ -29,6 +29,7 @@ public class EnemyAI : MonoBehaviour
     public AudioClip swing;
     public AudioClip bounce;
     public AudioClip Explo;
+    public AudioClip roll;
 
     public Material explosionMaterial;
 
@@ -65,6 +66,10 @@ public class EnemyAI : MonoBehaviour
     public GameObject target;       // GameObject, který se má otáèet
     public float rotationSpeedExplo = 10f;
     private float explodeRange = 2f;
+
+    private AudioSource audioSource;
+
+  
     private void Start()
     {
         animator = GetComponent<Animator>();
@@ -73,7 +78,16 @@ public class EnemyAI : MonoBehaviour
         startPosition = transform.position;  // uložíme startovní pozici
         
     }
-  
+    private void Awake()
+    {
+        
+            audioSource = GetComponent<AudioSource>();
+        if (audioSource != null)
+        {
+            // Pokud je tato hodnota false, zvuk se pozastaví, když se pozastaví hra.
+            audioSource.ignoreListenerPause = false;
+        }
+    }
     private void Update()
     {
         if (enemyHealth == null || player == null)
@@ -123,6 +137,8 @@ public class EnemyAI : MonoBehaviour
                 agent.SetDestination(player.gameObject.transform.position);
                 Debug.Log(player.gameObject.transform.position.ToString());
 
+                StartRollingSound();
+
                 if (distance <= explodeRange)
                 {
                     Explode();
@@ -131,6 +147,7 @@ public class EnemyAI : MonoBehaviour
             else
             {
                 agent.isStopped = true;
+                StopRollingSound();
             }
         }
 
@@ -170,11 +187,19 @@ public class EnemyAI : MonoBehaviour
 
        
     }
+    private void PlayEnemySFX(AudioClip clip)
+    {
+        if (clip == null || audioSource == null)
+            return;
+
+        audioSource.volume = AudioSettings.Instance.GetSfxVolume();
+        audioSource.PlayOneShot(clip);
+    }
 
     public void PlayFootstep()
     {
-        if (footstepSound != null)
-            AudioSettings.Instance.PlaySFX(footstepSound);
+        
+        PlayEnemySFX(footstepSound);
     }
 
     private void Explode()
@@ -188,11 +213,35 @@ public class EnemyAI : MonoBehaviour
 
         StartCoroutine(ExplosionBehavior());
     }
+    private void StartRollingSound()
+    {
+        if (audioSource == null || roll == null || isDead) return;
+        
+        // Pokud nehraje (nebo hraje, ale jiný klip), nastavíme ho a spustíme.
+        if (!audioSource.isPlaying || audioSource.clip != roll)
+        {
+            audioSource.clip = roll;
+            audioSource.loop = true; // Zapneme opakování
+            audioSource.volume = AudioSettings.Instance.GetSfxVolume();
+            audioSource.Play();
+        }
+    }
+
+    private void StopRollingSound()
+    {
+        // Zastavíme pouze, pokud právì hraje klip pro kutálení
+        if (audioSource != null && audioSource.isPlaying && audioSource.clip == roll)
+        {
+            audioSource.Stop();
+            audioSource.loop = false; // Vypneme opakování pro pøíštì
+            audioSource.clip = null;
+        }
+    }
     private IEnumerator ExplosionBehavior()
     {
         // --- 1) VÝSKOK SMÌREM K HRÁÈI ---
         if (agent != null) agent.enabled = false;
-        AudioSettings.Instance.PlaySFX(bounce);
+        PlayEnemySFX(bounce);
         Vector3 toPlayer = (player.gameObject.transform.position - transform.position).normalized;
         Vector3 jumpDir = (toPlayer + Vector3.up) * 0.3f;   
         float jumpDuration = 0.1f;
@@ -209,7 +258,7 @@ public class EnemyAI : MonoBehaviour
             yield return null;
         }
         SpawnInstantExplosion(transform.position + Vector3.up * 0.5f, Color.red);
-        AudioSettings.Instance.PlaySFX(Explo);
+        PlayEnemySFX(Explo);
 
         float dist = Vector3.Distance(transform.position, player.transform.position);
         if (dist < explodeRange)
@@ -242,7 +291,7 @@ public class EnemyAI : MonoBehaviour
         animator.SetTrigger("Attack");
 
         lastAttackTime = Time.time;
-        AudioSettings.Instance.PlaySFX(swing);
+        PlayEnemySFX(swing);
     }
 
     public void DealDamage()
@@ -308,7 +357,7 @@ public class EnemyAI : MonoBehaviour
         Vector3 direction = (player.gameObject.transform.position - firePoint.position).normalized;
         direction.y += 0.055f; // slight upward adjustment if needed  
 
-        AudioSettings.Instance.PlaySFX(shootSound);
+        PlayEnemySFX(shootSound);
         // Spawn the projectile
         GameObject projectile = Instantiate(projectilePrefab, firePoint.position, Quaternion.LookRotation(direction));
 
@@ -335,8 +384,7 @@ public class EnemyAI : MonoBehaviour
         if (hasExploded) return;
         gameObject.GetComponent<Collider>().enabled = false;
         hasExploded = true;
-        AudioSettings.Instance.PlaySFX(explosion);
-
+        PlayEnemySFX(explosion);
         StartCoroutine(ExplosionEffect(transform.position,Color.magenta));
     }
 
@@ -396,7 +444,7 @@ public class EnemyAI : MonoBehaviour
     {
         Renderer[] renderers = GetComponentsInChildren<Renderer>();
         Material[] mats = new Material[0];
-        AudioSettings.Instance.PlaySFX(shine);
+        PlayEnemySFX(shine);
         if (renderers.Length > 0)
         {
             List<Material> tempMats = new List<Material>();
@@ -424,7 +472,7 @@ public class EnemyAI : MonoBehaviour
         maxScale = 6f;
         growSpeed = 20f;
         Vector3 spawnPos = transform.position + new Vector3(0, 1.25f, 0); // zvýší Y o 2 metry
-        AudioSettings.Instance.PlaySFX(explosionPrefab);
+        PlayEnemySFX(explosionPrefab);
         StartCoroutine(ExplosionEffect(spawnPos, Color.green));
     }
     private void SpawnInstantExplosion(Vector3 position, Color color)

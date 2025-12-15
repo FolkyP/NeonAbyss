@@ -11,7 +11,7 @@ public abstract class WeaponBase : MonoBehaviour
     [Header("Ammo (Total Only)")]
     public int carriedAmmo = 50; // total ammo pool
     public int maxAmmo = 120;
-
+    [HideInInspector] public int startingAmmoFromInspector;
     public bool infiniteAmmo = false;
 
     [Header("Firing")]
@@ -32,6 +32,7 @@ public abstract class WeaponBase : MonoBehaviour
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null)
             audioSource = gameObject.AddComponent<AudioSource>();
+        startingAmmoFromInspector = carriedAmmo;
     }
 
     public abstract void StartFire();

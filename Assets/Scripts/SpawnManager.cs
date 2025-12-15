@@ -7,16 +7,25 @@ public class SpawnManager : MonoBehaviour
     public static SpawnManager Instance;
 
     [Header("References")]
+    public GameObject player;
+
     public GameObject[] enemyPrefabs; // 0 = Melee, 1 = Ranged, 2 = Explosion (nastav v inspectoru)
-    public bool autoFindSpawnPoints = true;
     public List<Transform> spawnPoints = new List<Transform>();
 
-    [Header("Spawn settings - Phase 1")]
+    [Header("Map Spawn Points (Manually assigned)")]
+    public Transform map1PlayerStart;
+    public List<Transform> map1SpawnPoints = new List<Transform>();
+    public Transform map2PlayerStart;
+    public List<Transform> map2SpawnPoints = new List<Transform>();
+    public Transform map3PlayerStart;
+    public List<Transform> map3SpawnPoints = new List<Transform>();
+
+    [Header("Map1 Spawn settings - Phase 1")]
     public float spawnIntervalPhase1 = 5f;
     public int maxActiveEnemies = 12;
     public int spawnPerWave = 1;
 
-    [Header("Phase 2 (harder/faster)")]
+    [Header("Map1 Phase 2 (harder/faster)")]
     public bool inPhase2 = false;
     public float spawnIntervalPhase2 = 2f;
     public float healthMultiplierPhase2 = 1.6f;
@@ -29,6 +38,7 @@ public class SpawnManager : MonoBehaviour
     private Coroutine spawnLoopCoroutine;
     private bool spawning = false;
 
+    private int mapSystem;
     private void Awake()
     {
         if (Instance != null && Instance != this) Destroy(gameObject);
@@ -37,31 +47,26 @@ public class SpawnManager : MonoBehaviour
 
     private void Start()
     {
-        if (autoFindSpawnPoints)
-        {
-            // 1) hledá objekty s komponentou SpawnPoint
-            SpawnPoint[] pts = FindObjectsOfType<SpawnPoint>();
-            foreach (var p in pts) spawnPoints.Add(p.transform);
-
-            // 2) fallback: hledej objekty se tagem "SpawnPoint"
-            if (spawnPoints.Count == 0)
-            {
-                GameObject[] byTag = GameObject.FindGameObjectsWithTag("SpawnPoint");
-                foreach (var g in byTag) spawnPoints.Add(g.transform);
-            }
-        }
-
-        
     }
 
+  
     private void Update()
     {
-        if (!spawning && startWhenGameStarts && GameSettings.Instance != null && GameSettings.Instance.isGameOn)
+        
+        if (!spawning && startWhenGameStarts && GameSettings.Instance != null && GameSettings.Instance.isGameOn && mapSystem ==0)
         {
             StartSpawning();
         }
+        if(mapSystem == 1)
+        {
+            //Wave mapa
+        }
+        if(mapSystem == 2)
+        {
+            //Boss
+        }
     }
-
+    #region Map1
     public void StartSpawning()
     {
         if (spawnLoopCoroutine != null) StopCoroutine(spawnLoopCoroutine);
@@ -72,13 +77,10 @@ public class SpawnManager : MonoBehaviour
     public void EnterPhase2()
     {
         inPhase2 = true;
+        startWhenGameStarts = true;
 
-        // restartujeme spawnování, aby se interval okamžitì zmìnil
-        if (spawnLoopCoroutine != null)
-        {
-            StopCoroutine(spawnLoopCoroutine);
-        }
-        spawnLoopCoroutine = StartCoroutine(SpawnLoop());
+        StartSpawning();
+        
     }
 
 
@@ -92,7 +94,7 @@ public class SpawnManager : MonoBehaviour
         }
     }
 
-    // zavolat když skonèí countdown -> zastaví spawnování a zabije všechny nepøátele
+    // zavolat když skonèí countdown  zastaví spawnování a zabije všechny nepøátele
     public void StopAndKillAll()
     {
         startWhenGameStarts = false;
@@ -169,18 +171,70 @@ public class SpawnManager : MonoBehaviour
             }
         }
     }
-
-    #region Editor helpers
-#if UNITY_EDITOR
-    private void OnDrawGizmosSelected()
+    #endregion
+    public void ApplyMapIndex(int index)
     {
-        Gizmos.color = Color.yellow;
-        foreach (var sp in spawnPoints)
+        startWhenGameStarts = true;
+        switch (index)
         {
-            if (sp != null)
-                Gizmos.DrawWireSphere(sp.position, 0.5f);
+            default:
+            case 0:
+                spawnPoints = new List<Transform>(map1SpawnPoints);
+                if (player != null && map1PlayerStart != null)
+                {
+                    player.transform.position = map1PlayerStart.position;
+                    player.transform.rotation = map1PlayerStart.rotation;
+                    mapSystem = 0;
+                }
+                break;
+            case 1:
+                spawnPoints = new List<Transform>(map2SpawnPoints);
+                if (player != null && map2PlayerStart != null)
+                {
+                    player.transform.position = map2PlayerStart.position;
+                    player.transform.rotation = map2PlayerStart.rotation;
+                    mapSystem = 2;
+                }
+                break;
+            case 2:
+                spawnPoints = new List<Transform>(map3SpawnPoints);
+                if (player != null && map3PlayerStart != null)
+                {
+                    player.transform.position = map3PlayerStart.position;
+                    player.transform.rotation = map3PlayerStart.rotation;
+                    mapSystem = 1;
+                }
+                break;
         }
     }
-#endif
-    #endregion
+    public void ResetForNewMap()
+    {
+        StopAndKillAll();
+        ApplyMapIndex(GameSettings.Instance.currentMapIndex);
+    }
+
+    //public void ConfigureForGameMode(GameSettings.GameMode mode)
+    //{
+    //    switch (mode)
+    //    {
+    //        case GameSettings.GameMode.Survival:
+    //            startWhenGameStarts = true;
+    //            spawnIntervalPhase1 = 4f;
+    //            maxActiveEnemies = 16;
+    //            break;
+    //        case GameSettings.GameMode.Waves:
+    //            startWhenGameStarts = false;
+    //            spawnIntervalPhase1 = 6f;
+    //            maxActiveEnemies = 10;
+    //            break;
+    //        case GameSettings.GameMode.Final:
+    //            startWhenGameStarts = false;
+    //            spawnIntervalPhase1 = 3f;
+    //            maxActiveEnemies = 20;
+    //            break;
+    //        default:
+    //            // nic mìnit
+    //            break;
+    //    }
+    //}
 }

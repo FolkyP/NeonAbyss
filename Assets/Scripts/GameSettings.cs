@@ -4,6 +4,7 @@ using UnityEngine.SceneManagement;
 using System.Collections;
 using TMPro;
 
+[ExecuteAlways]
 public class GameSettings : MonoBehaviour
 {
     [SerializeField] public bool isGameOn = false;
@@ -52,6 +53,18 @@ public class GameSettings : MonoBehaviour
     public static GameSettings Instance;
 
     public TMP_Text score;
+
+    [Header("Map Sequence Management")]
+    public GameObject[] mapGameObjects;
+    public MapIndex selectedMap = MapIndex.Map1;
+    [HideInInspector] public int currentMapIndex = 0;
+
+    public enum MapIndex { Map1 = 0, Map2 = 1, Map3 = 2 }
+    public enum GameMode { Survival, Final, Waves }
+    public GameMode selectedGameMode;
+
+    public WeaponManager weaponManager;
+
     private void Update()
     {
         if (hasStarted && Input.GetKeyDown(KeyCode.Space))
@@ -98,8 +111,59 @@ public class GameSettings : MonoBehaviour
 
         // Default selection
         SelectButton(normalButton);
-    }
 
+        ApplySelectedMap();
+    }
+    private void OnValidate()
+    {
+        
+        ApplySelectedMap();
+    }
+    [ContextMenu("Apply Selected Map")]
+    public void ApplySelectedMap()
+    {
+
+        //stop spawn a change system
+        currentMapIndex = (int)selectedMap;
+
+        if (mapGameObjects != null && mapGameObjects.Length > 0)
+        {
+            for (int i = 0; i < mapGameObjects.Length; i++)
+            {
+                if (mapGameObjects[i] != null)
+                    mapGameObjects[i].SetActive(i == currentMapIndex);
+            }
+        }
+        if (SpawnManager.Instance != null)
+        {
+            SpawnManager.Instance.ApplyMapIndex(currentMapIndex);
+            SpawnManager.Instance.ResetForNewMap();
+        }
+        //if (sm != null)
+        //{
+        //    sm.ApplyMapIndex(currentMapIndex);
+
+        //    // Mùžete podle mapy automaticky nastavit herní mód (pøíklad map->mode)
+        //    // Pokud chcete jinou logiku map->mode, upravte zde.
+        //    switch (selectedMap)
+        //    {
+        //        case MapIndex.Map1:
+        //            selectedGameMode = GameMode.Survival;
+        //            break;
+        //        case MapIndex.Map2:
+        //            selectedGameMode = GameMode.Waves;
+        //            break;
+        //        case MapIndex.Map3:
+        //            selectedGameMode = GameMode.Final;
+        //            break;
+        //    }
+
+        //    //// Aplikujte pøípadné map-specific nastavení (èasovaèe, spawn rychlost...)
+        //    //sm.ConfigureForGameMode(selectedGameMode);
+        //}
+
+
+    }
     private void SelectButton(Button button)
     {
         selectedButton = button;
@@ -198,7 +262,15 @@ public class GameSettings : MonoBehaviour
         isGameStopped = true;
        
         menuMid.SetActive(true);
-        
+        AudioSource[] allAudioSources = FindObjectsOfType<AudioSource>();
+        foreach (AudioSource source in allAudioSources)
+        {
+            // Zkontrolujeme, zda zdroj není ten pro UI zvuky
+            if (source != AudioSettings.Instance.uiSource && source.loop)
+            {
+                source.Pause(); // Použijeme Pause, abychom mohli pozdìji volat UnPause
+            }
+        }
     }
     public void OpenSureLeaveMenu()
     {
@@ -219,7 +291,15 @@ public class GameSettings : MonoBehaviour
         isGameStopped = false;
         menuMid.SetActive(false);
         sureMenu.SetActive(false);
-        
+        AudioSource[] allAudioSources = FindObjectsOfType<AudioSource>();
+        foreach (AudioSource source in allAudioSources)
+        {
+            // Pokud je zdroj pozastaven (a není to UI zdroj)
+            if (source != AudioSettings.Instance.uiSource && source.time != 0 && !source.isPlaying)
+            {
+                source.UnPause();
+            }
+        }
     }
     public void StartGameWithDifficulty()
     {
@@ -243,8 +323,10 @@ public class GameSettings : MonoBehaviour
 
         foreach (GameObject g in game)
             g.SetActive(true);
+        
 
         selectMenu.SetActive(false);
+
         Time.timeScale = 1f; // pause while counting down
         hasStarted = true;
     }
@@ -254,6 +336,40 @@ public class GameSettings : MonoBehaviour
         StartCoroutine(CountdownRoutine());
     }
 
+    
+    public void LoadNextMap()
+    {
+        // 1. Zvýšit index
+        currentMapIndex++;
+
+        // Ošetøení pøeteèení indexu
+        if (currentMapIndex >= mapGameObjects.Length)
+            currentMapIndex = mapGameObjects.Length - 1; // Nebo 0, pokud chceš smyèku
+
+        selectedMap = (MapIndex)currentMapIndex;
+        Debug.Log("Loading map: " + selectedMap);
+
+        // 2. Aplikovat mapu
+        ApplySelectedMap();
+
+        // 3. RESET UI a HRÁÈE
+        playerUI.SetActive(true);
+        SpawnManager.Instance.ResetForNewMap();
+        weaponManager.ResetGun();
+
+        // --- HLAVNÍ ZMÌNA ZDE ---
+
+        // Vypneme herní smyèku (zastaví spawnování, timer atd.)
+        isGameOn = false;
+
+        if (currentMapIndex > 0) 
+        StartCountDown();
+        // Povolíme èekání na mezerník v Update()
+        hasStarted = true;
+
+        // Volitelnì: Zobrazit znovu nápovìdu "Press Space" pokud ji máš schovanou
+        // if(startTextUI != null) startTextUI.SetActive(true);
+    }
     private IEnumerator CountdownRoutine()
     {
         int count = 3;

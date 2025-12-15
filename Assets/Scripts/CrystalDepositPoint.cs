@@ -1,5 +1,6 @@
-using UnityEngine;
 using TMPro;
+using Unity.VisualScripting;
+using UnityEngine;
 
 public class CrystalDepositPoint : MonoBehaviour
 {
@@ -10,7 +11,7 @@ public class CrystalDepositPoint : MonoBehaviour
     private bool playerInRange = false;
     private bool hasBeenUsed = false;
 
-
+    public Collider deathZoneTrigger;
 
     public AudioClip gate;
     public Transform leftDoor;
@@ -22,6 +23,7 @@ public class CrystalDepositPoint : MonoBehaviour
 
     public float speed = 1f;
     private bool opening = false;
+    private bool closing = false;
 
     private Vector3 leftClosedPos;
     private Vector3 rightClosedPos;
@@ -72,8 +74,38 @@ public class CrystalDepositPoint : MonoBehaviour
             leftDoor.localPosition = Vector3.Lerp(leftDoor.localPosition, leftOpenPos, Time.deltaTime * speed);
             rightDoor.localPosition = Vector3.Lerp(rightDoor.localPosition, rightOpenPos, Time.deltaTime * speed);
         }
+        if (closing)
+        {
+            leftDoor.localPosition = Vector3.Lerp(leftDoor.localPosition, leftClosedPos, Time.deltaTime * speed);
+            rightDoor.localPosition = Vector3.Lerp(rightDoor.localPosition, rightClosedPos, Time.deltaTime * speed);
+        }
     }
+    private void CheckForPlayerDeath()
+    {
+        if (deathZoneTrigger == null)
+        {
+            Debug.LogWarning("Death Zone Trigger není nastaven ve skriptu CrystalDepositPoint!");
+            return;
+        }
 
+        Bounds bounds = deathZoneTrigger.bounds;
+
+       
+        Collider[] hitColliders = Physics.OverlapBox(
+            bounds.center,
+            bounds.extents,
+            deathZoneTrigger.transform.rotation
+        );
+
+        foreach (Collider hitCollider in hitColliders)
+        {
+            if (hitCollider.CompareTag("Player"))
+            {
+                PlayerLife.Instance.TakeDamage(9999);
+                return;
+            }
+        }
+    }
     private void AddCrystalsToDeposit()
     {
         int amount = crystalManager.crystalCount;
@@ -102,7 +134,24 @@ public class CrystalDepositPoint : MonoBehaviour
         if (gateCollider != null)
             gateCollider.enabled = false;
     }
+    public void CloseGate()
+    {
+        opening = false;
+        closing = false; // Vypneme closing, aby se neaktualizovala pozice v Update (není potøeba, ale pro jistotu)
 
+        // Okamžité nastavení pozice na zavøenou
+        leftDoor.localPosition = leftClosedPos;
+        rightDoor.localPosition = rightClosedPos;
+
+
+        if (gateCollider != null)
+            gateCollider.enabled = true;
+        if (SpawnManager.Instance != null)
+            SpawnManager.Instance.StopAndKillAll();
+
+        CheckForPlayerDeath();
+
+    }
     private void DisableIndicators()
     {
         foreach (var ind in indicators)
