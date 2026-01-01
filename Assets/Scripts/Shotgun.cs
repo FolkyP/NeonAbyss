@@ -124,7 +124,16 @@ public class Shotgun : WeaponBase
                     lastHitPoint = hit.point;
                     break; // pellet stops after enemy
                 }
+                if (hit.collider.CompareTag("Boss"))
+                {
+                    float dmg = damagePerPellet;
+                    totalDamage += dmg;
+                    lastHitPoint = hit.point;
 
+                    BossManager.Instance.ReciveDamage((int)totalDamage);
+
+                    break; // pellet stops after enemy
+                }
                 // HEADSHOT
                 if (hit.collider.CompareTag("Head"))
                 {
@@ -134,6 +143,17 @@ public class Shotgun : WeaponBase
                     totalDamage += dmg;
                     lastHitPoint = hit.point;
                     break;
+                }
+                if (hit.collider.CompareTag("ShieldCrystal"))
+                {
+
+                    ShieldCrystal crystal = hit.transform.gameObject.GetComponent<ShieldCrystal>();
+                    if (crystal != null)
+                    {
+                        crystal.TakeDamage(1); // dáš dmg, jaký chceš
+                        Hitmarker.Instance?.ShowHit(hit.point, 1, true);
+
+                    }
                 }
 
                 // Ignore everything else completely

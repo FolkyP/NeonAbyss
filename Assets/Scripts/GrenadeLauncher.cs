@@ -131,13 +131,24 @@ public class GrenadeLauncher : WeaponBase
     {
         if (hitEffectPrefab != null)
         {
-            GameObject impactFX = Instantiate(hitEffectPrefab, hit.point, Quaternion.LookRotation(hit.normal));
-            Destroy(impactFX, 0.5f);
+            var fx = Instantiate(hitEffectPrefab, hit.point, Quaternion.LookRotation(hit.normal));
+            Destroy(fx, 0.5f);
         }
 
-        GrenadeImpact impact = new GameObject("LaserImpact").AddComponent<GrenadeImpact>();
+        // Boss damage (parent-safe)
+        BossManager boss = hit.collider.GetComponentInParent<BossManager>();
+        if (boss != null)
+        {
+            boss.ReciveDamage((int)damage);
+            return;
+        }
+
+        // Ostatní
+        GrenadeImpact impact = new GameObject("GrenadeImpact").AddComponent<GrenadeImpact>();
         impact.damage = damage;
         impact.TriggerImpact(hit.point);
         Destroy(impact.gameObject, 1f);
     }
+
+
 }

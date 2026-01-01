@@ -39,6 +39,11 @@ public class SpawnManager : MonoBehaviour
     private bool spawning = false;
 
     private int mapSystem;
+
+    private bool bossSpawning = false;
+    public bool isPhaseForSpawn = false;
+    public List<Transform> spawnPointsForBoss = new List<Transform>();
+
     private void Awake()
     {
         if (Instance != null && Instance != this) Destroy(gameObject);
@@ -61,9 +66,10 @@ public class SpawnManager : MonoBehaviour
         {
             //Wave mapa
         }
-        if(mapSystem == 2)
+        if(mapSystem == 2 && isPhaseForSpawn)
         {
             //Boss
+            StartBossSpawning();
         }
     }
     #region Map1
@@ -73,7 +79,13 @@ public class SpawnManager : MonoBehaviour
         spawning = true;
         spawnLoopCoroutine = StartCoroutine(SpawnLoop());
     }
+    public void StartBossSpawning() {
+        if (spawnLoopCoroutine != null) StopCoroutine(spawnLoopCoroutine);
 
+        bossSpawning = true;
+        spawnLoopCoroutine = StartCoroutine(SpawnBossLoop());
+
+    }
     public void EnterPhase2()
     {
         inPhase2 = true;
@@ -87,6 +99,8 @@ public class SpawnManager : MonoBehaviour
     public void StopSpawning()
     {
         spawning = false;
+        bossSpawning = false;
+        isPhaseForSpawn = false;
         if (spawnLoopCoroutine != null)
         {
             StopCoroutine(spawnLoopCoroutine);
@@ -106,6 +120,38 @@ public class SpawnManager : MonoBehaviour
             // znièení bez pøidání skóre (Destroy pøímo)
             Destroy(e.gameObject);
         }
+    }
+    IEnumerator SpawnBossLoop() {
+        while (bossSpawning)
+        {
+            EnemyAI[] active = FindObjectsOfType<EnemyAI>();
+            if (active.Length < 8 && spawnPointsForBoss.Count > 0 && enemyPrefabs.Length > 0)
+            {
+                int toSpawn = spawnPerWave;
+                for (int i = 0; i < toSpawn; i++)
+                {
+                    Transform sp = spawnPointsForBoss[Random.Range(0, spawnPointsForBoss.Count)];
+                    GameObject prefab = enemyPrefabs[Random.Range(0, enemyPrefabs.Length)];
+
+                    GameObject go = Instantiate(prefab, sp.position, Quaternion.identity);
+                    if (prefab == enemyPrefabs[1])
+                    {
+                        Vector3 pos = go.transform.position;
+                        pos.y += 2.5f;
+                        go.transform.position = pos;
+                    }
+                    EnemyAI enemyAI = go.GetComponent<EnemyAI>();
+                    if (enemyAI != null && enemyAI.player == null)
+                    {
+                        enemyAI.player = GameObject.Find("MainCharacter");
+                    }
+                    
+                }
+            }
+            float wait = 3f;
+            yield return new WaitForSeconds(wait);
+        }
+        
     }
 
     IEnumerator SpawnLoop()

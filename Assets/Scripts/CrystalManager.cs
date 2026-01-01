@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class CrystalManager : MonoBehaviour
 {
-    
+    public static CrystalManager Instance;
     public float crystalDropChance = .15f;
     public float healthDropChance = .15f;
     public float shieldDropChance = .15f;
@@ -22,6 +22,12 @@ public class CrystalManager : MonoBehaviour
     public TMP_Text count;
     public AudioClip pick;
     // Start is called before the first frame update
+
+    private void Awake()
+    {
+        if (Instance == null) Instance = this;
+    }
+
     void Start()
     {
         
@@ -58,7 +64,7 @@ public class CrystalManager : MonoBehaviour
     public void Drop(Vector3 pozice)
     {
         float random = Random.value;
-        if (random > 0/*.35f*/)
+        if (random > .45f)
         {
             DropCrystals(pozice);
         }
@@ -112,6 +118,64 @@ public class CrystalManager : MonoBehaviour
 
 
         SphereCollider col = shield.AddComponent<SphereCollider>();
+        col.isTrigger = true;
+        col.radius = 1f;
+    }
+
+
+    public void StartBuffSpawners(Vector3 point1, Vector3 point2)
+    {
+        StartCoroutine(BuffSpawnLoop(point1));
+        StartCoroutine(BuffSpawnLoop(point2));
+    }
+    IEnumerator BuffSpawnLoop(Vector3 position)
+    {
+        // Ensure the Y position is correct relative to your game logic
+        Vector3 spawnPos = new Vector3(position.x, 0.35f, position.z);
+
+        while (true)
+        {
+            GameObject currentBuff = SpawnRandomPowerUp(spawnPos);
+            // This makes it twice as big in all directions (X, Y, Z)
+            currentBuff.transform.localScale = Vector3.one * 2f;
+            while (currentBuff != null)
+            {
+                yield return null; // Check again next frame
+            }
+
+           
+            yield return new WaitForSeconds(10f);
+        }
+    }
+    private GameObject SpawnRandomPowerUp(Vector3 pos)
+    {
+        int randomPick = Random.Range(0, 3); // 0, 1, or 2
+        GameObject spawnedObj = null;
+
+        switch (randomPick)
+        {
+            case 0: // Health
+                spawnedObj = Instantiate(healthPrefab, pos, Quaternion.identity);
+                ConfigurePowerUp(spawnedObj, PowerUp.PowerUpType.Health);
+                break;
+            case 1: // Shield
+                spawnedObj = Instantiate(shieldPrefab, pos, Quaternion.identity);
+                ConfigurePowerUp(spawnedObj, PowerUp.PowerUpType.Shield);
+                break;
+            case 2: // Ammo
+                spawnedObj = Instantiate(ammoPrefab, pos, Quaternion.identity);
+                ConfigurePowerUp(spawnedObj, PowerUp.PowerUpType.Ammo);
+                break;
+        }
+        return spawnedObj;
+    }
+    private void ConfigurePowerUp(GameObject obj, PowerUp.PowerUpType type)
+    {
+        PowerUp p = obj.AddComponent<PowerUp>();
+        p.type = type;
+        p.pick = pick;
+
+        SphereCollider col = obj.AddComponent<SphereCollider>();
         col.isTrigger = true;
         col.radius = 1f;
     }

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Burst.CompilerServices;
 using UnityEngine;
 
 public class GrenadeImpact : MonoBehaviour
@@ -76,6 +77,17 @@ public class GrenadeImpact : MonoBehaviour
                 {
                     anyEnemyHit = true;
                     Hitmarker.Instance?.ShowHit(nearby.transform.position, finalDamage, false);
+                }
+                if (nearby.CompareTag("ShieldCrystal"))
+                {
+
+                    ShieldCrystal crystal = nearby.transform.gameObject.GetComponent<ShieldCrystal>();
+                    if (crystal != null)
+                    {
+                        crystal.TakeDamage(1); // dáš dmg, jaký chceš
+                        Hitmarker.Instance?.ShowHit(nearby.transform.position, 1, true);
+
+                    }
                 }
             }
         }

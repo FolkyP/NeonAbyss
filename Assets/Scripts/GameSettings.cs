@@ -139,6 +139,10 @@ public class GameSettings : MonoBehaviour
             SpawnManager.Instance.ApplyMapIndex(currentMapIndex);
             SpawnManager.Instance.ResetForNewMap();
         }
+        if(currentMapIndex > 0)
+        {
+            BossManager.Instance.StartBossFight();
+        }
         //if (sm != null)
         //{
         //    sm.ApplyMapIndex(currentMapIndex);

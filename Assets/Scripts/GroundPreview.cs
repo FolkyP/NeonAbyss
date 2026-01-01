@@ -6,19 +6,23 @@ public class GroundPreview : MonoBehaviour
     public AnimationCurve scaleCurve = AnimationCurve.EaseInOut(0, 0.8f, 1, 1f);
     private float timer = 0f;
     private Transform t;
+    private Vector3 baseScale;
 
-    void Awake() { t = transform; }
+    void Awake()
+    {
+        t = transform;
+        baseScale = t.localScale;
+    }
 
     void Update()
     {
         timer += Time.deltaTime;
         float tNorm = Mathf.Clamp01(timer / duration);
         float s = scaleCurve.Evaluate(tNorm);
-        t.localScale = new Vector3(s, s, s);
-
-        // Optional: pulse alpha or emission via material here (if material supports it).
+        t.localScale = baseScale * s;
 
         if (timer >= duration)
             Destroy(gameObject);
     }
+
 }

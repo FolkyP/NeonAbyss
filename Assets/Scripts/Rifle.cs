@@ -82,13 +82,28 @@ public class Rifle : WeaponBase
                 Hitmarker.Instance?.ShowHit(hit.point, damage, false);
                 continue;
             }
-
+            if (hit.collider.CompareTag("Boss"))
+            {
+                BossManager.Instance.ReciveDamage((int)damage);
+                Hitmarker.Instance?.ShowHit(hit.point, damage, false);
+                continue;
+            }
             // CÍL JE HEADSHOT
             if (hit.collider.CompareTag("Head"))
             {
                 hit.collider.transform.root.SendMessage("TakeDamage", damage * 1.5f, SendMessageOptions.DontRequireReceiver);
                 Hitmarker.Instance?.ShowHit(hit.point, damage * 1.5f, true);
                 continue;
+            }
+            if (hit.collider.CompareTag("ShieldCrystal")) {
+
+                ShieldCrystal crystal = hit.transform.gameObject.GetComponent<ShieldCrystal>();
+                if (crystal != null)
+                {
+                    crystal.TakeDamage(1); // dáš dmg, jaký chceš
+                    Hitmarker.Instance?.ShowHit(hit.point, 1, true);
+
+                }
             }
 
             // cokoliv jiného ignorujeme úplnì
