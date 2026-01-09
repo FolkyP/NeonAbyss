@@ -1,8 +1,8 @@
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
-using UnityEngine.UI;
 using UnityEngine;
-using System.Collections;
+using UnityEngine.UI;
 
 public class WeaponManager : MonoBehaviour
 {
@@ -19,7 +19,11 @@ public class WeaponManager : MonoBehaviour
     private bool isSwitching = false;
 
     [Header("Ammo given by pickups per weapon")]
-    public int[] ammoPickupAmount = { 40, 20, 10, 5};
+    public int[] ammoPickupAmount = { 40, 20, 10, 5 };
+
+    private int cachedWeaponIndex = -1;
+    private bool weaponsHiddenByOverdrive = false;
+
 
     void Start()
     {
@@ -49,7 +53,7 @@ public class WeaponManager : MonoBehaviour
     {
         if (gameSettings.isGameOn == false) return;
         if (gameSettings.isGameStopped) return;
-
+       
         // number key switching
         for (int i = 0; i < weapons.Count; i++)
         {
@@ -62,8 +66,8 @@ public class WeaponManager : MonoBehaviour
         if (scroll > 0f) SwitchTo((currentIndex + 1) % weapons.Count);
         if (scroll < 0f) SwitchTo((currentIndex - 1 + weapons.Count) % weapons.Count);
 
-        // fire
-        if (Input.GetButtonDown("Fire1"))
+        // fire Input.GetButtonDown("Fire1") , Input.GetButtonUp("Fire1")
+        if (Input.GetKeyDown(KeyCode.Q))
         {
             WeaponBase currentWeapon = weapons[currentIndex];
 
@@ -73,7 +77,7 @@ public class WeaponManager : MonoBehaviour
                 Debug.Log("Click! No ammo!");
         }
 
-        if (Input.GetButtonUp("Fire1"))
+        if (Input.GetKeyUp(KeyCode.Q))
             weapons[currentIndex].StopFire();
     }
 
@@ -168,8 +172,8 @@ public class WeaponManager : MonoBehaviour
 
         UpdateWeaponUI();
     }
-    
-public void LoadAllGuns()
+
+    public void LoadAllGuns()
     {
         Debug.Log("Spouštím LoadAllGuns pro reset munice na hodnoty z Inspektoru.");
 
@@ -193,13 +197,59 @@ public void LoadAllGuns()
         {
             if (weapon.infiniteAmmo) continue;
 
-            
-                weapon.carriedAmmo = weapon.startingAmmoFromInspector;
-            
+
+            weapon.carriedAmmo = weapon.startingAmmoFromInspector;
+
 
         }
         UpdateWeaponUI();
     }
+    public void SetAllWeaponsActive(bool active)
+    {
+        StopAllCoroutines();
+        isSwitching = false;
+
+        if (!active)
+        {
+            // ULOŽÍME aktuální zbraò
+            cachedWeaponIndex = currentIndex;
+            weaponsHiddenByOverdrive = true;
+        }
+
+        for (int i = 0; i < weapons.Count; i++)
+        {
+            weapons[i].StopFire();
+            weapons[i].gameObject.SetActive(active);
+        }
+
+        if (active && weaponsHiddenByOverdrive)
+        {
+            RestoreActiveWeapon();
+        }
+    }
+    private void RestoreActiveWeapon()
+    {
+        if (cachedWeaponIndex < 0 || cachedWeaponIndex >= weapons.Count)
+            return;
+
+        // vypni vše (pro jistotu)
+        for (int i = 0; i < weapons.Count; i++)
+            weapons[i].gameObject.SetActive(false);
+
+        currentIndex = cachedWeaponIndex;
+
+        WeaponBase w = weapons[currentIndex];
+        w.gameObject.SetActive(true);
+        w.transform.localPosition = w.originalLocalPos;
+
+        UpdateWeaponUI();
+        UpdateCursor();
+        UpdateWeaponOpacity();
+
+        weaponsHiddenByOverdrive = false;
+    }
+
+
     private void UpdateWeaponOpacity()
     {
         for (int i = 0; i < weaponImages.Length; i++)

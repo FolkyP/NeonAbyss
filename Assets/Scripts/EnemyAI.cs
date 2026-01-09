@@ -11,7 +11,16 @@ public class EnemyAI : MonoBehaviour
     public enum EnemyType { Melee, Ranged, Explosion }
     [Header("Enemy Type")]
     public EnemyType enemyType;
+    private bool isFrozen = false;
 
+    [Header("Glory Kill")]
+    public float gloryKillRange = 1.8f;
+    private Renderer[] cachedRenderers;
+    [SerializeField] private Color glowColor = Color.magenta;
+    [SerializeField] private float glowIntensity = 3f;
+    private MaterialPropertyBlock mpb;
+    private bool glowActive;
+    public bool IsGloryKillAvailable => glowActive && !isDead;
 
     [Header("References")]
     public GameObject player;              // odkaz na hráèe
@@ -69,14 +78,19 @@ public class EnemyAI : MonoBehaviour
 
     private AudioSource audioSource;
 
-  
+    public Color previewColor = new Color(1f, 0.85f, 0.2f); // žluto-oranžová
+    public float previewIntensity = 4f;
+
+    private bool isPreviewed = false;
+    private bool isPaused = false;
     private void Start()
     {
         animator = GetComponent<Animator>();
         agent = GetComponent<NavMeshAgent>();
         enemyHealth = GetComponent<EnemyHealth>();
         startPosition = transform.position;  // uložíme startovní pozici
-        
+        cachedRenderers = GetComponentsInChildren<Renderer>(true);
+        mpb = new MaterialPropertyBlock();
     }
     private void Awake()
     {
@@ -90,71 +104,125 @@ public class EnemyAI : MonoBehaviour
     }
     private void Update()
     {
-        if (enemyHealth == null || player == null)
-            return;
-        if (GameSettings.Instance.isGameOn == false)
-            return;
-        
-        float distance = Vector3.Distance(transform.position, player.gameObject.transform.position);
+        if (agent == null) agent = GetComponent<NavMeshAgent>();
 
+        if (GameSettings.Instance != null && GameSettings.Instance.isOverDriveActive)
+        {
+            if (!isFrozen)
+                FreezeEnemy();
+            return;
+        }
+        else
+        {
+            if (isFrozen)
+                UnfreezeEnemy();
+        }
+
+        if (isFrozen)
+            return;
+
+        // základní null-checky
+        if (enemyHealth == null || player == null) return;
+        if (GameSettings.Instance != null && GameSettings.Instance.isGameOn == false) return;
+
+        float distance = Vector3.Distance(transform.position, player.transform.position);
+
+        // pokud agent není použitelný, vynech kód který s nim pracuje
+        bool canAgent = CanUseAgent();
+
+        // pokud používáš agent.isStopped jinde, vždy obalit canAgent:
+        if (canAgent && agent.isStopped) { /* nemusí nic dìlat, ale nevolat když nelze */ }
+
+        // ===== MELEE =====
         if (enemyType == EnemyType.Melee && !isDead)
         {
-
-            if (distance <= chaseRange)
+            if (canAgent)
             {
-                agent.isStopped = false;
-                agent.SetDestination(player.gameObject.transform.position);
+                agent.stoppingDistance = attackRange * 0.9f;
+
+                if (distance <= chaseRange)
+                {
+                    if (distance <= agent.stoppingDistance)
+                    {
+                        if (!agent.isStopped) agent.isStopped = true;
+                    }
+                    else
+                    {
+                        if (agent.isStopped) agent.isStopped = false;
+                        agent.SetDestination(player.transform.position);
+                    }
+                }
+                else
+                {
+                    if (!agent.isStopped) agent.isStopped = true;
+                }
+
+                if (agent != null && agent.enabled && agent.isOnNavMesh)
+                {
+                    bool shouldRun = !agent.isStopped && agent.velocity.sqrMagnitude > 0.01f;
+                    animator.SetBool("isRunning", shouldRun);
+                }
+                else
+                {
+                    animator.SetBool("isRunning", false);
+                }
+
             }
             else
             {
-                agent.isStopped = true;
+                // fallback (agent nepoužitelný) - vypnout bìh/útok
+                animator.SetBool("isRunning", false);
             }
 
-            // Animace bìhu
-            float speed = agent.velocity.magnitude;
-            animator.SetBool("isRunning", speed > 0.1f);
-
-            // Útok, pokud blízko
-            if (distance <= attackRange)
+            if (!isPaused && distance <= attackRange)
             {
                 Attack();
             }
-
         }
+
+        // ===== EXPLOSION =====
         if (enemyType == EnemyType.Explosion && !isDead)
         {
-            // Vizuální rotace dítìte – OK
-            if (target != null)
-                target.transform.Rotate(0f, 0f, rotationSpeedExplo * Time.deltaTime);
-            Debug.Log("targeti");
-            // DÙLEŽITÉ: nech NavMeshAgent otáèet tìlo
-            agent.updateRotation = true;
-            agent.updatePosition = true;
+            if (target != null) target.transform.Rotate(0f, 0f, rotationSpeedExplo * Time.deltaTime);
 
-            if (distance <= chaseRange)
+            if (canAgent)
             {
-                agent.isStopped = false;
-                agent.SetDestination(player.gameObject.transform.position);
-                Debug.Log(player.gameObject.transform.position.ToString());
+                agent.updateRotation = true;
+                agent.updatePosition = true;
 
-                StartRollingSound();
-
-                if (distance <= explodeRange)
+                if (distance <= chaseRange)
                 {
-                    Explode();
+                    agent.isStopped = false;
+                    agent.SetDestination(player.transform.position);
+                    StartRollingSound();
+
+                    if (distance <= explodeRange)
+                    {
+                        Explode();
+                    }
+                }
+                else
+                {
+                    agent.isStopped = true;
+                    StopRollingSound();
                 }
             }
             else
             {
-                agent.isStopped = true;
+                // pokud agent není použitelný, zajisti, aby rolling zvuk nebìžel
                 StopRollingSound();
             }
         }
 
+        // ===== RANGED =====
         if (enemyType == EnemyType.Ranged && !isDead)
         {
-            agent.updatePosition = false; // stop NavMeshAgent from overriding transform
-            agent.updateRotation = false;
+            // ranged nepotøebuje navmesh pohyb — zpracuj bez nìj
+            if (CanUseAgent())
+            {
+                agent.updatePosition = false;
+                agent.updateRotation = false;
+            }
 
             Vector3 pos = transform.position;
             pos.y = 3f;
@@ -163,29 +231,86 @@ public class EnemyAI : MonoBehaviour
             RotateTowardsPlayer();
 
             lastAttackTime -= Time.deltaTime;
-            bool inRange = (player.gameObject.transform.position - transform.position).sqrMagnitude <= shootRange * shootRange;
+            bool inRange = (player.transform.position - transform.position).sqrMagnitude <= shootRange * shootRange;
 
-            if (lastAttackTime <= 0f && inRange)
+            if (!isPaused && lastAttackTime <= 0f && inRange)
             {
                 ShootAtPlayer();
                 lastAttackTime = attackCooldown;
             }
+
             float newY = startPosition.y + Mathf.Sin(Time.time * floatFrequency) * floatAmplitude;
             Vector3 floatPos = transform.position;
             floatPos.y = newY;
             transform.position = floatPos;
-
-           
         }
         else
         {
-            agent.updatePosition = true;
-            agent.updateRotation = true;
+            if (CanUseAgent())
+            {
+                agent.updatePosition = true;
+                agent.updateRotation = true;
+            }
+        }
+    }
+    private void FreezeEnemy()
+    {
+        isFrozen = true;
+
+        // NavMesh
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
+        {
+            agent.isStopped = true;
+            agent.ResetPath();
         }
 
+        // Animace
+        if (animator != null)
+        {
+            animator.SetBool("isRunning", false);
+            animator.ResetTrigger("Attack");
+            animator.speed = 0f; // STOP animací
+        }
 
+        // Zvuky
+        StopRollingSound();
+    }
 
-       
+    private void UnfreezeEnemy()
+    {
+        isFrozen = false;
+
+        // Animace
+        if (animator != null)
+        {
+            animator.speed = 1f;
+        }
+    }
+
+    public void SetPaused(bool paused)
+    {
+        if (isPaused == paused) return;
+        isPaused = paused;
+
+        // zastav následující AI chování
+        if (CanUseAgent())
+        {
+            agent.isStopped = paused;
+            if (paused) agent.ResetPath(); // volitelné: vymaže cíl
+        }
+
+        // animace
+        if (animator != null)
+        {
+            animator.SetBool("isRunning", false);
+            if (paused) animator.ResetTrigger("Attack"); // bezpeènì zruší trigger
+        }
+
+        if (paused) StopRollingSound();
+    }
+    private bool CanUseAgent()
+    {
+        return agent != null && agent.enabled && agent.isOnNavMesh;
     }
     private void PlayEnemySFX(AudioClip clip)
     {
@@ -198,9 +323,10 @@ public class EnemyAI : MonoBehaviour
 
     public void PlayFootstep()
     {
-        
+        if (isFrozen || isDead) return;
         PlayEnemySFX(footstepSound);
     }
+
 
     private void Explode()
     {
@@ -280,6 +406,7 @@ public class EnemyAI : MonoBehaviour
 
     private void Attack()
     {
+        if (isFrozen || isDead) return;
         if (Time.time - lastAttackTime < attackCooldown)
             return;
 
@@ -491,5 +618,41 @@ public class EnemyAI : MonoBehaviour
 
         Destroy(explosionSphere, 0.3f); // zniè sphere po krátké dobì
     }
+    public void SetGloryKillGlow(bool enabled)
+    {
+        if (glowActive == enabled)
+            return;
 
+        glowActive = enabled;
+        ApplyEmission();
+
+    }
+    public void SetPreview(bool enabled)
+    {
+        if (isPreviewed == enabled) return;
+        isPreviewed = enabled;
+        ApplyEmission();
+    }
+    private void ApplyEmission()
+    {
+        // precedence: preview > gloryActive > none
+        Color emission;
+        if (isPreviewed)
+            emission = previewColor * previewIntensity;
+        else if (glowActive)
+            emission = glowColor * glowIntensity;
+        else
+            emission = Color.black;
+
+        if (cachedRenderers == null || mpb == null) return;
+
+        foreach (Renderer r in cachedRenderers)
+        {
+            if (r == null) continue;
+            r.GetPropertyBlock(mpb);
+            // použij shader property "_EmissionColor" (standardní)
+            mpb.SetColor("_EmissionColor", emission);
+            r.SetPropertyBlock(mpb);
+        }
+    }
 }

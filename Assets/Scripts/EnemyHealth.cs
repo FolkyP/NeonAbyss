@@ -5,7 +5,11 @@ public class EnemyHealth : MonoBehaviour
     [Header("Health Settings")]
     public float maxHealth = 100f;
     public float currentHealth;
+    [Header("Glory Kill")]
+    [Range(0f, 1f)]
+    public float gloryKillThreshold = 0.2f;
 
+    private bool gloryKillActive = false;
     private EnemyAI enemyAI;
     private CrystalManager crystalManager;
     void Awake()
@@ -20,6 +24,12 @@ public class EnemyHealth : MonoBehaviour
     {
         currentHealth -= amount;
         Debug.Log($"{gameObject.name} took {amount} damage, health = {currentHealth}");
+        float healthPercent = currentHealth / maxHealth;
+        if (!gloryKillActive && healthPercent <= gloryKillThreshold && currentHealth > 0f)
+        {
+            gloryKillActive = true;
+            enemyAI.SetGloryKillGlow(true);
+        }
 
         if (currentHealth <= 0f)
         {
@@ -30,7 +40,6 @@ public class EnemyHealth : MonoBehaviour
 
                 crystalManager.Drop(transform.position);
                 enemyAI.RangedDead();
-
                 enemyAI.isDead = true;
 
 
@@ -52,6 +61,6 @@ public class EnemyHealth : MonoBehaviour
             }
         }
     }
+   
 
-    
 }

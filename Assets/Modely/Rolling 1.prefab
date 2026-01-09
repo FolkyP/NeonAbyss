@@ -192,7 +192,7 @@ GameObject:
   - component: {fileID: 8465988719272831313}
   - component: {fileID: 8465988719272831326}
   - component: {fileID: 2771876762317900571}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Rolling 1
   m_TagString: Enemy
   m_Icon: {fileID: 0}
@@ -243,6 +243,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   enemyType: 2
+  gloryKillRange: 1.8
+  glowColor: {r: 1, g: 0, b: 0, a: 1}
+  glowIntensity: 3
   player: {fileID: 0}
   firePoint: {fileID: 0}
   pew: {fileID: 0}
@@ -274,6 +277,8 @@ MonoBehaviour:
   isDead: 0
   target: {fileID: 5384749967670831384}
   rotationSpeedExplo: 10
+  previewColor: {r: 1, g: 0.85, b: 0.2, a: 1}
+  previewIntensity: 4
 --- !u!114 &8465988719272831313
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -286,8 +291,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff08670912e2e1a4882df26d1574e6d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 50
+  maxHealth: 65
   currentHealth: 0
+  gloryKillThreshold: 0.5
 --- !u!195 &8465988719272831326
 NavMeshAgent:
   m_ObjectHideFlags: 0

@@ -64,19 +64,19 @@ public class CrystalManager : MonoBehaviour
     public void Drop(Vector3 pozice)
     {
         float random = Random.value;
-        if (random > .45f)
+        if (random > .60f)
         {
             DropCrystals(pozice);
         }
-        if(random > .15f && random <= .25f)
+        if(random > .15f && random < .25f)
         {
             DropHealth(pozice);
         }
-        if (random > .25f && random <= .35f)
+        if (random > .25f && random < .35f)
         {
             DropAmmo(pozice);
         }
-        if (random > .35f && random <= .45f)
+        if (random > .35f && random < .45f)
         {
             DropShield(pozice);
         }

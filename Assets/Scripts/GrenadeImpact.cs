@@ -1,6 +1,4 @@
-using System.Collections;
 using System.Collections.Generic;
-using Unity.Burst.CompilerServices;
 using UnityEngine;
 
 public class GrenadeImpact : MonoBehaviour
@@ -13,91 +11,131 @@ public class GrenadeImpact : MonoBehaviour
     public AudioClip explosionSound;
     public bool dealSelfDamage = true;
 
+    // optional: how much damage a crystal takes from one explosion
+    [Header("Crystal Settings")]
+    public int crystalDamagePerExplosion = 1;
+
     public void TriggerImpact(Vector3 hitPosition)
     {
-        // --- 1. Visual & Sound FX ---
-        if (explosionEffectPrefab != null)
-        {
-            hitPosition.y += 0.1f;
+        SpawnFX(hitPosition);
+        ApplyForce(hitPosition);
+        ApplyDamage(hitPosition);
+        PlayerCam.Instance?.Shake(0.3f, 0.5f);
+    }
 
-            GameObject fx = Instantiate(explosionEffectPrefab, hitPosition, Quaternion.identity);
-            LaserExplosionSphere effect = fx.GetComponent<LaserExplosionSphere>();
-            if (effect != null && explosionSound != null)
-                effect.PlaySound(explosionSound);
-            Destroy(fx, 1.5f);
-        }
+    private void SpawnFX(Vector3 pos)
+    {
+        if (explosionEffectPrefab == null) return;
 
-        // --- 2A. Physics Force (exclude player layer) ---
-        int forceMask = ~LayerMask.GetMask("Player");
-        Collider[] forceColliders = Physics.OverlapSphere(hitPosition, explosionRadius, forceMask, QueryTriggerInteraction.Ignore);
+        pos.y += 0.1f;
+        GameObject fx = Instantiate(explosionEffectPrefab, pos, Quaternion.identity);
+
+        LaserExplosionSphere effect = fx.GetComponent<LaserExplosionSphere>();
+        if (effect != null && explosionSound != null)
+            effect.PlaySound(explosionSound);
+
+        Destroy(fx, 1.5f);
+    }
+
+    private void ApplyForce(Vector3 pos)
+    {
+        int forceMask = ~LayerMask.GetMask("Player"); // exclude player from physics force
+        Collider[] forceColliders = Physics.OverlapSphere(pos, explosionRadius, forceMask, QueryTriggerInteraction.Ignore);
 
         foreach (Collider nearby in forceColliders)
         {
             Rigidbody rb = nearby.attachedRigidbody;
             if (rb != null)
-                rb.AddExplosionForce(explosionForce, hitPosition, explosionRadius, 1f, ForceMode.Impulse);
+                rb.AddExplosionForce(explosionForce, pos, explosionRadius, 1f, ForceMode.Impulse);
         }
+    }
 
-        // --- 2B. Damage (include player) ---
-        int damageMask = ~0; // include everything
-        Collider[] damageColliders = Physics.OverlapSphere(hitPosition, explosionRadius, damageMask, QueryTriggerInteraction.Ignore);
+    private void ApplyDamage(Vector3 pos)
+    {
+        // get everything in radius (you might choose to filter by layer mask to optimize)
+        Collider[] overlaps = Physics.OverlapSphere(pos, explosionRadius, ~0, QueryTriggerInteraction.Ignore);
 
-        HashSet<GameObject> damagedEnemies = new HashSet<GameObject>(); // Track already damaged enemies
+        HashSet<EnemyHealth> damagedEnemies = new HashSet<EnemyHealth>();
+        HashSet<ShieldCrystal> damagedCrystals = new HashSet<ShieldCrystal>();
         bool anyEnemyHit = false;
+        bool playerDamaged = false;
 
-        foreach (Collider nearby in damageColliders)
+        foreach (Collider col in overlaps)
         {
-            GameObject rootObj = nearby.transform.root.gameObject; // Enemy root
-            bool isPlayer = nearby.CompareTag("Player") || rootObj.CompareTag("Player");
+            if (col == null) continue;
 
-            // Skip if this enemy already took damage from this explosion
-            if (!isPlayer && damagedEnemies.Contains(rootObj))
-                continue;
-
-            // --- Damage falloff ---
-            float distance = Vector3.Distance(hitPosition, nearby.transform.position);
-            float falloff = Mathf.Clamp01(1f - distance / explosionRadius);
-            float finalDamage = damage * falloff;
-
-            if (finalDamage <= 0f)
-                continue;
-
-            if (isPlayer)
+            // --- PLAYER DAMAGE (once) ---
+            if (!playerDamaged && dealSelfDamage && col.CompareTag("Player"))
             {
-                if (dealSelfDamage)
-                    PlayerLife.Instance?.TakeDamage(Mathf.RoundToInt(finalDamage * 0.5f)); // half self-damage
+                // Use ClosestPoint so tall colliders don't under-report distance
+                Vector3 closest = col.ClosestPoint(pos);
+                float dist = Vector3.Distance(pos, closest);
+                float falloff = Mathf.Clamp01(1f - dist / explosionRadius);
+                float pDamage = damage * falloff * 0.5f; // keep half self-damage as before
+
+                if (pDamage > 0f)
+                    PlayerLife.Instance?.TakeDamage(Mathf.RoundToInt(pDamage));
+
+                playerDamaged = true;
+                // continue searching for enemies/crystals - don't `continue` here
             }
-            else
+
+            // --- SHIELD CRYSTAL HANDLING ---
+            ShieldCrystal crystal = col.GetComponentInParent<ShieldCrystal>();
+            if (crystal != null && !damagedCrystals.Contains(crystal))
             {
-                damagedEnemies.Add(rootObj); // Mark as damaged
+                Vector3 closest = col.ClosestPoint(pos);
+                float dist = Vector3.Distance(pos, closest);
+                float falloff = Mathf.Clamp01(1f - dist / explosionRadius);
 
-                nearby.gameObject.SendMessage("TakeDamage", finalDamage, SendMessageOptions.DontRequireReceiver);
-
-                if (nearby.CompareTag("Enemy"))
+                // If you want crystals to also get falloff-based damage, you can compute here,
+                // but your original logic used a fixed amount (1). We'll apply fixed amount but only if inside radius.
+                if (falloff > 0f)
                 {
+                    crystal.TakeDamage(crystalDamagePerExplosion);
+                    damagedCrystals.Add(crystal);
+                    Hitmarker.Instance?.ShowHit(crystal.transform.position, crystalDamagePerExplosion, true);
+                }
+
+                // proceed to next collider (avoid double-processing same collider as enemy)
+                continue;
+            }
+
+            // --- ENEMY HANDLING (use EnemyHealth on parent) ---
+            EnemyHealth enemy = col.GetComponentInParent<EnemyHealth>();
+            if (enemy != null && !damagedEnemies.Contains(enemy))
+            {
+                // If enemy is already dead, skip
+                if (enemy.currentHealth <= 0f)
+                {
+                    damagedEnemies.Add(enemy);
+                    continue;
+                }
+
+                Vector3 closest = col.ClosestPoint(pos);
+                float dist = Vector3.Distance(pos, closest);
+                float falloff = Mathf.Clamp01(1f - dist / explosionRadius);
+                float finalDamage = damage * falloff;
+
+                if (finalDamage > 0f)
+                {
+                    damagedEnemies.Add(enemy);
+                    enemy.TakeDamage(finalDamage);
                     anyEnemyHit = true;
-                    Hitmarker.Instance?.ShowHit(nearby.transform.position, finalDamage, false);
+                    Hitmarker.Instance?.ShowHit(enemy.transform.position, finalDamage, false);
                 }
-                if (nearby.CompareTag("ShieldCrystal"))
-                {
-
-                    ShieldCrystal crystal = nearby.transform.gameObject.GetComponent<ShieldCrystal>();
-                    if (crystal != null)
-                    {
-                        crystal.TakeDamage(1); // dáš dmg, jaký chceš
-                        Hitmarker.Instance?.ShowHit(nearby.transform.position, 1, true);
-
-                    }
-                }
+                continue;
             }
+
+            // If you have other damageable objects (e.g. destructible crates) that implement an interface,
+            // you can detect and apply damage here. Example (optional):
+            // IDamageable dmg = col.GetComponentInParent<IDamageable>();
+            // if (dmg != null) { dmg.TakeDamage(finalDamage); }
         }
 
-        // --- 3. Central hitmarker flash ---
+        // global central hitmarker when an enemy was hit
         if (anyEnemyHit)
-            Hitmarker.Instance?.ShowHit(hitPosition, 0f, false);
-
-        // --- 4. Camera Shake ---
-        PlayerCam.Instance.Shake(0.3f, 0.5f);
+            Hitmarker.Instance?.ShowHit(pos, 0f, false);
     }
 
 }

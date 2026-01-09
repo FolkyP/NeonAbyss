@@ -34,7 +34,7 @@ public class Dashing : MonoBehaviour
     {
         if (gameSettings.isGameOn == false) return;
         if (gameSettings.isGameStopped) return;
-
+        if (gameSettings.isOverDriveActive) return;
         if (Input.GetKeyDown(dashKey))
         {
             Dash();

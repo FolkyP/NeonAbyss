@@ -90,6 +90,18 @@ public class PlayerCam : MonoBehaviour
         originalpos = transform.localPosition;
         shakeCoroutine = StartCoroutine(ShakeCoroutine(duration, magnitude));
     }
+    public void SetYawImmediate(float yaw)
+    {
+        // rotationY a rotationX jsou privátní pole v té tøídì — tato metoda v té tøídì má na nì pøístup
+        rotationY = yaw;
+        orientation.rotation = Quaternion.Euler(0f, yaw, 0f);
+        transform.rotation = Quaternion.Euler(rotationX, rotationY, 0f);
+    }
+    public void SetYawSoft(float yaw)
+    {
+        rotationY = Mathf.LerpAngle(rotationY, yaw, Time.deltaTime * 10f);
+        orientation.rotation = Quaternion.Euler(0f, rotationY, 0f);
+    }
 
     private IEnumerator ShakeCoroutine(float duration, float magnitude)
     {

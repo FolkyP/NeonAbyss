@@ -30,7 +30,7 @@ public class GameSettings : MonoBehaviour
     public GameObject easySelect;
     public GameObject normalSelect;
     public GameObject hardSelect;
-
+    public bool isOverDriveActive = false;
 
     private Button selectedButton;
 
@@ -367,12 +367,10 @@ public class GameSettings : MonoBehaviour
         isGameOn = false;
 
         if (currentMapIndex > 0) 
-        StartCountDown();
         // Povolíme èekání na mezerník v Update()
         hasStarted = true;
 
-        // Volitelnì: Zobrazit znovu nápovìdu "Press Space" pokud ji máš schovanou
-        // if(startTextUI != null) startTextUI.SetActive(true);
+        
     }
     private IEnumerator CountdownRoutine()
     {

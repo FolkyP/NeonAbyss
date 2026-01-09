@@ -10,8 +10,8 @@ public class Hitmarker : MonoBehaviour
     [Header("UI References")]
     public Image hitmarkerImage;
     public Image CritHitMarkerImage;
-    public GameObject damagePopupPrefab;   // assign your TMP prefab here
-    public Canvas popupCanvas;             // assign your main UI canvas
+    public GameObject damagePopupPrefab;   
+    public Canvas popupCanvas;             
 
     [Header("Settings")]
     public float hitmarkerDuration = 0.2f;
@@ -30,7 +30,6 @@ public class Hitmarker : MonoBehaviour
 
     public void ShowHit(Vector3 worldPosition, float damage,bool isCrit)
     {
-        // --- Hitmarker flash ---
         if (hitmarkerImage != null && !isCrit)
         {
             if (hideRoutine != null)
@@ -51,20 +50,21 @@ public class Hitmarker : MonoBehaviour
         }
 
         
-
-        // --- Floating damage number ---
         if (damagePopupPrefab != null && popupCanvas != null && damage > 0f)
         {
             if (isCrit)
             {
                 damagePopupPrefab.GetComponent<TMP_Text>().color = Color.red;
                 ShowDamagePopup(worldPosition, damage);
+                Overdrive.Instance?.AddChargeFromDamage(damage*1.5f);
             }
             else
             {
                 damagePopupPrefab.GetComponent<TMP_Text>().color = Color.cyan;
                 ShowDamagePopup(worldPosition, damage);
+                Overdrive.Instance?.AddChargeFromDamage(damage);
             }
+            
         }
     }
 
@@ -77,9 +77,8 @@ public class Hitmarker : MonoBehaviour
 
     private void ShowDamagePopup(Vector3 worldPos, float damage)
     {
-        // Convert world position to screen space
         Vector3 screenPos = Camera.main.WorldToScreenPoint(worldPos);
-        if (screenPos.z < 0f) return; // ignore if behind camera
+        if (screenPos.z < 0f) return; 
 
         GameObject popup = Instantiate(damagePopupPrefab, popupCanvas.transform);
         popup.transform.position = screenPos;

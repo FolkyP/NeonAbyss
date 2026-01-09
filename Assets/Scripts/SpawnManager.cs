@@ -58,9 +58,13 @@ public class SpawnManager : MonoBehaviour
     private void Update()
     {
         
-        if (!spawning && startWhenGameStarts && GameSettings.Instance != null && GameSettings.Instance.isGameOn && mapSystem ==0)
+        if (!spawning && startWhenGameStarts && GameSettings.Instance != null && GameSettings.Instance.isGameOn && mapSystem ==0 && GameSettings.Instance.isOverDriveActive == false)
         {
             StartSpawning();
+        }
+        if(GameSettings.Instance.isOverDriveActive)
+        {
+            StopSpawning();
         }
         if(mapSystem == 1)
         {

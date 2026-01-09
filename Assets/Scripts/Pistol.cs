@@ -98,6 +98,12 @@ public class Pistol : WeaponBase
         foreach (var hit in hits)
         {
             // CÍL JE ENEMY
+            if (hit.collider.CompareTag("Head"))
+            {
+                hit.collider.transform.root.SendMessage("TakeDamage", damage * 1.5f, SendMessageOptions.DontRequireReceiver);
+                Hitmarker.Instance?.ShowHit(hit.point, damage * 1.5f, true);
+                return;
+            }
             if (hit.collider.CompareTag("Enemy"))
             {
                 hit.collider.SendMessage("TakeDamage", damage, SendMessageOptions.DontRequireReceiver);
@@ -111,12 +117,7 @@ public class Pistol : WeaponBase
                 continue;
             }
             // CÍL JE HEADSHOT
-            if (hit.collider.CompareTag("Head"))
-            {
-                hit.collider.transform.root.SendMessage("TakeDamage", damage * 1.5f, SendMessageOptions.DontRequireReceiver);
-                Hitmarker.Instance?.ShowHit(hit.point, damage * 1.5f, true);
-                continue;
-            }
+            
             if (hit.collider.CompareTag("ShieldCrystal"))
             {
 

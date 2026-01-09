@@ -44,7 +44,7 @@ public class Monitor : MonoBehaviour
 
     public WeaponManager weaponManager;
 
-    public Collider elevator; //Cutscena + nacteni finalbosse , v lednu 2. mapa mezi
+    public Collider elevator; //Cutscena + nacteni finalbosse 
 
     private bool phaseFinished = false;
 

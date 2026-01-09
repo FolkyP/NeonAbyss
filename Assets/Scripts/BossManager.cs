@@ -346,7 +346,8 @@ public class BossManager : MonoBehaviour
         //exploze a win
         hp.gameObject.SetActive(false);
         bossHPSlider.gameObject.SetActive(false);
-        SpawnManager.Instance.StopSpawning();
+        SpawnManager.Instance.StopAndKillAll();
+        SpawnManager.Instance.isPhaseForSpawn = false;
         Destroy(bossPrefab);
     }
     IEnumerator FlashHpBar()

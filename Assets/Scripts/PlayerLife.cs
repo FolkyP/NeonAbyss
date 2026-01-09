@@ -4,6 +4,7 @@ using UnityEngine.UI;
 
 public class PlayerLife : MonoBehaviour
 {
+    [SerializeField] VignetteEffect vignette;
     [Header("Base Max Stats")]
     public int maxHealth = 100;     // normal max
     public int maxShield = 100;     // normal max
@@ -113,6 +114,16 @@ public class PlayerLife : MonoBehaviour
             
                 shieldText.text = $"{currentShield}/{maxShield}";
         }
+        if (vignette == null) return;
+        if (vignette.vignetteColor == new Color(0, 1, 1) && vignette.intensity > 0)
+        {
+            return;
+        }
+
+        if (currentHealth <= 50)
+            vignette.SetIntensityFromSpeed(0.125f, new Color(1, 0, 0));
+        else
+            vignette.SetIntensityFromSpeed(0f, new Color(1, 0, 0));
     }
 
     public bool IsDead()
