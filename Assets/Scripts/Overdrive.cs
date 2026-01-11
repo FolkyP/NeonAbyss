@@ -51,14 +51,27 @@ public class Overdrive : MonoBehaviour
     private float timer2 = 0f;
     public GameObject katana1;
     public GameObject katana2;
-
+    [SerializeField] private GameObject abilityIcon;
     private Vector3 startLocalPosition1;
     private Vector3 startLocalPosition2;
     private Quaternion startWorldRotation1;
     private Quaternion startWorldRotation2;
+
+    public AudioClip slash;
+    public AudioClip readyAb;
     private void Awake()
     {
-        if (Instance == null) Instance = this;
+        if (Instance == null)
+        {
+            Instance = this;
+            // Pokud nechceš, aby Overdrive zmizel pøi zmìnì scény:
+            // DontDestroyOnLoad(gameObject); 
+        }
+        else
+        {
+            Destroy(gameObject);
+            return;
+        }
         playerMovement = GetComponent<PlayerMovement>();
         if (playerMovement == null)
             Debug.LogWarning("Overdrive: PlayerMovement not found on same GameObject — Phase dash won't work.");
@@ -189,7 +202,8 @@ public class Overdrive : MonoBehaviour
         WeaponManager wm = FindObjectOfType<WeaponManager>();
         if (wm != null)
             wm.SetAllWeaponsActive(false);
-
+        abilityIcon.SetActive(false);
+        AudioSettings.Instance.PlaySFX(slash);
         switch (target.enemyType)
         {
             case EnemyAI.EnemyType.Melee:
@@ -390,6 +404,7 @@ public class Overdrive : MonoBehaviour
         if (currentPercent >= 100f && prev < 100f)
         {
             Debug.Log("Overdrive: fully charged!");
+            AudioSettings.Instance.PlaySFX(readyAb);
             OnFullyCharged?.Invoke();
         }
     }
@@ -416,12 +431,16 @@ public class Overdrive : MonoBehaviour
                 ClearPreview();
                 currentPreview = t;
                 currentPreview.SetPreview(true); // musíš mít metodu v EnemyAI
+                abilityIcon.SetActive(true);
             }
         }
         else
         {
             ClearPreview();
+            abilityIcon.SetActive(false);
+
         }
+       
     }
     private void ClearPreview()
     {

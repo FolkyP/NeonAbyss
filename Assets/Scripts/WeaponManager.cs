@@ -24,7 +24,7 @@ public class WeaponManager : MonoBehaviour
     private int cachedWeaponIndex = -1;
     private bool weaponsHiddenByOverdrive = false;
 
-
+    
     void Start()
     {
         for (int i = 0; i < weapons.Count; i++)
@@ -67,7 +67,7 @@ public class WeaponManager : MonoBehaviour
         if (scroll < 0f) SwitchTo((currentIndex - 1 + weapons.Count) % weapons.Count);
 
         // fire Input.GetButtonDown("Fire1") , Input.GetButtonUp("Fire1")
-        if (Input.GetKeyDown(KeyCode.Q))
+        if (Input.GetButtonDown("Fire1"))
         {
             WeaponBase currentWeapon = weapons[currentIndex];
 
@@ -77,7 +77,7 @@ public class WeaponManager : MonoBehaviour
                 Debug.Log("Click! No ammo!");
         }
 
-        if (Input.GetKeyUp(KeyCode.Q))
+        if (Input.GetButtonUp("Fire1"))
             weapons[currentIndex].StopFire();
     }
 

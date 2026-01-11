@@ -1,8 +1,9 @@
-using UnityEngine;
-using UnityEngine.UI;
-using UnityEngine.SceneManagement;
 using System.Collections;
 using TMPro;
+using UnityEngine;
+using UnityEngine.Playables;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 [ExecuteAlways]
 public class GameSettings : MonoBehaviour
@@ -10,6 +11,8 @@ public class GameSettings : MonoBehaviour
     [SerializeField] public bool isGameOn = false;
     [SerializeField] public bool isGameStopped = false;
 
+    public GameObject playerCanvas;
+    public GameObject StartPlane;
     public GameObject exitSc;
     public GameObject settingsMenu;
     public GameObject mainMenu;
@@ -64,13 +67,19 @@ public class GameSettings : MonoBehaviour
     public GameMode selectedGameMode;
 
     public WeaponManager weaponManager;
-
+    public CutsceneManager cutsceneManager;
+    private bool canStartAfterCutscene = false;
     private void Update()
     {
+        if (cutsceneManager.isCutscenePlaying || !canStartAfterCutscene)
+        {
+            return;
+        }
         if (hasStarted && Input.GetKeyDown(KeyCode.Space))
         {
             StartCountDown();
             hasStarted = false; // Prevent multiple starts
+            canStartAfterCutscene = false;
         }
         if (isGameOn)
         {
@@ -262,6 +271,7 @@ public class GameSettings : MonoBehaviour
     }
     public void OpenMenuMidGame()
     {
+        
          Time.timeScale = 0f; // Pause the game
         isGameStopped = true;
        
@@ -307,6 +317,11 @@ public class GameSettings : MonoBehaviour
     }
     public void StartGameWithDifficulty()
     {
+        
+        if (CutsceneManager.Instance != null)
+        {
+            CutsceneManager.Instance.PrepareCutsceneBeforePlayerSpawn();
+        }
         if (selectedButton == easyButton)
         {
             Debug.Log("Starting game with Easy difficulty");
@@ -324,15 +339,20 @@ public class GameSettings : MonoBehaviour
         }
 
         cameraUI.gameObject.SetActive(false);
-
-        foreach (GameObject g in game)
-            g.SetActive(true);
+        StartPlane.SetActive(true);
         
 
-        selectMenu.SetActive(false);
-
+        //EnableGameplayAfterIntro();
         Time.timeScale = 1f; // pause while counting down
         hasStarted = true;
+
+        if (CutsceneManager.Instance != null)
+        {
+            CutsceneManager.Instance.PlayStartCutscene();
+        }
+        selectMenu.SetActive(false);
+
+
     }
 
     public void StartCountDown()
@@ -420,6 +440,63 @@ public class GameSettings : MonoBehaviour
         // Reload the scene to reset all objects and variables
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
+    void HandleCutsceneEnded(PlayableDirector director)
+    {
+        EnableGameplayAfterIntro();
+
+        // Aktivujeme objekty hry
+        foreach (GameObject g in game)
+            g.SetActive(true);
+
+        // Spustíme korutinu pro bezpeèný reset zbraní a odpoèet
+        StartCoroutine(PrepareGameplayAfterCutscene());
+    }
+
+    private IEnumerator PrepareGameplayAfterCutscene()
+    {
+        // 1. POÈKÁME jeden snímek (null), aby probìhly metody Start() u zbraní
+        yield return null;
+
+        // 2. Teï už mají zbranì naètené své náboje, mùžeme je resetovat
+        if (weaponManager != null)
+        {
+            weaponManager.ResetGun();
+        }
+
+        // 3. Poèkáme malou chvíli pro "vychladnutí" mezerníku (proti skipu)
+        yield return new WaitForSeconds(0.2f);
+
+        canStartAfterCutscene = true;
+
+        // Volitelné: Zobrazit text "Press SPACE to Start" nebo nìco podobného
+    }
+    void EnableGameplayAfterIntro()
+    {
+        playerCanvas.SetActive(true);
+        StartPlane.SetActive(false);
+    }
+    void OnEnable()
+    {
+        StartCoroutine(RegisterCutsceneListenerNextFrame());
+    }
+
+    private IEnumerator RegisterCutsceneListenerNextFrame()
+    {
+        // poèkej jeden frame, aby probìhlo Awake všech objektù
+        yield return null;
+        if (CutsceneManager.Instance != null)
+            CutsceneManager.Instance.OnCutsceneEnded += HandleCutsceneEnded;
+        else
+            Debug.LogWarning("CutsceneManager.Instance is null in GameSettings.OnEnable");
+    }
+
+    void OnDisable()
+    {
+        if (CutsceneManager.Instance != null)
+            CutsceneManager.Instance.OnCutsceneEnded -= HandleCutsceneEnded;
+    }
+
+
 
     public void ExitGame()
     {
