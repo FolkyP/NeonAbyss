@@ -83,25 +83,25 @@ public class Overdrive : MonoBehaviour
     }
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.J) && !isSlashing1)
-        {
-            isSlashing1 = true;
-            timer1 = slashDuration;
+        //if (Input.GetKeyDown(KeyCode.J) && !isSlashing1)
+        //{
+        //    isSlashing1 = true;
+        //    timer1 = slashDuration;
 
-            // uložíme lokální pozici (abychom mohli resetovat vùèi parentu)
-            startLocalPosition1 = katana1.transform.localPosition;
+        //    // uložíme lokální pozici (abychom mohli resetovat vùèi parentu)
+        //    startLocalPosition1 = katana1.transform.localPosition;
 
-            // uložíme svìtovou rotaci katany v okamžiku stisku
-            startWorldRotation1 = katana1.transform.rotation;
-        }
-        if (Input.GetKeyDown(KeyCode.K) && !isSlashing2)
-        {
-            isSlashing2 = true;
-            timer2 = slashDuration;
+        //    // uložíme svìtovou rotaci katany v okamžiku stisku
+        //    startWorldRotation1 = katana1.transform.rotation;
+        //}
+        //if (Input.GetKeyDown(KeyCode.K) && !isSlashing2)
+        //{
+        //    isSlashing2 = true;
+        //    timer2 = slashDuration;
 
-            startLocalPosition2 = katana2.transform.localPosition;
-            startWorldRotation2 = katana2.transform.rotation;
-        }
+        //    startLocalPosition2 = katana2.transform.localPosition;
+        //    startWorldRotation2 = katana2.transform.rotation;
+        //}
         if (isSlashing1)
         {
             Transform yawOrientation = PlayerCam.Instance.orientation;

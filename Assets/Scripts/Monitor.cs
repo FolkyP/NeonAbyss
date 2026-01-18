@@ -47,7 +47,7 @@ public class Monitor : MonoBehaviour
     public Collider elevator; //Cutscena + nacteni finalbosse 
 
     private bool phaseFinished = false;
-
+    public GameObject deathcolliderColor;
     
 
     private void Start()
@@ -132,8 +132,10 @@ public class Monitor : MonoBehaviour
     private IEnumerator MainSequence()
     {
         // 10s  zavøení brány
+        deathcolliderColor.SetActive(true);
         yield return Countdown(timerCloseGate);
         crystalDepositPoint.CloseGate();
+        deathcolliderColor.SetActive(false);
 
         // 20s pauza
         yield return Countdown(timerPause);
@@ -245,7 +247,7 @@ public class Monitor : MonoBehaviour
         GameSettings.Instance.playerUI.SetActive(false);
 
         // tady mùžeš pøehrát animaci
-        yield return new WaitForSeconds(3f); // simulace cutscény
+        yield return new WaitForSeconds(1f); // simulace cutscény
 
         Debug.Log("CUTSCENE DONE – LOADING NEXT MAP");
 

@@ -11,6 +11,7 @@ public class GameSettings : MonoBehaviour
     [SerializeField] public bool isGameOn = false;
     [SerializeField] public bool isGameStopped = false;
 
+    public GameObject keyTutorial;
     public GameObject playerCanvas;
     public GameObject StartPlane;
     public GameObject exitSc;
@@ -71,16 +72,36 @@ public class GameSettings : MonoBehaviour
     private bool canStartAfterCutscene = false;
     private void Update()
     {
-        if (cutsceneManager.isCutscenePlaying || !canStartAfterCutscene)
+        // 1) Bezpeèná null-check pro cutsceneManager
+        if (cutsceneManager == null)
+        {
+            Debug.LogWarning("CutsceneManager není pøiøazen v GameSettings.");
+        }
+
+        // 2) P musí fungovat i když èekáme na cutscenu/mezery — proto kontrolujeme ho døív.
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            // Volitelnì: jen pokud je hra spuštìná
+            if (isGameOn || isGameStopped)
+                TogglePause();
+            else
+                Debug.Log("P stisknuto, ale hra není aktivní (isGameOn==false).");
+        }
+
+        if (cutsceneManager != null && cutsceneManager.isCutscenePlaying)
         {
             return;
         }
+
+
+        // Space pro start (zùstává)
         if (hasStarted && Input.GetKeyDown(KeyCode.Space))
         {
             StartCountDown();
             hasStarted = false; // Prevent multiple starts
             canStartAfterCutscene = false;
         }
+
         if (isGameOn)
         {
             _frameCount++;
@@ -89,28 +110,39 @@ public class GameSettings : MonoBehaviour
             if (Time.unscaledTime > _timer)
             {
                 int fps = Mathf.RoundToInt(_frameCount / _deltaTime);
-                _fpsText.text = $"FPS: {fps}";
-
+                if (_fpsText != null) _fpsText.text = $"FPS: {fps}";
                 _frameCount = 0;
                 _deltaTime = 0f;
                 _timer = Time.unscaledTime + _hudRefreshRate;
             }
-            if(Input.GetKeyDown(KeyCode.P))
-            {
-                if (menuMid.activeSelf)
-                {
-                    menuMid.SetActive(false);
-                    Time.timeScale = 1f; // Resume the game
-                    isGameStopped = false;
-                }
-                else
-                {
-                    OpenMenuMidGame();
-                }
-            }
-            
         }
     }
+    private void TogglePause()
+    {
+        if (menuMid == null)
+        {
+            Debug.LogWarning("menuMid není pøiøazený v GameSettings.");
+            return;
+        }
+
+        if (menuMid.activeSelf)
+        {
+            menuMid.SetActive(false);
+            Time.timeScale = 1f;
+            isGameStopped = false;
+            AudioSource[] allAudioSources = FindObjectsOfType<AudioSource>();
+            foreach (AudioSource source in allAudioSources)
+            {
+                if (source != AudioSettings.Instance.uiSource && source.time != 0 && !source.isPlaying)
+                    source.UnPause();
+            }
+        }
+        else
+        {
+            OpenMenuMidGame(); 
+        }
+    }
+
     void Start()
     {
         Instance = this;
@@ -148,10 +180,15 @@ public class GameSettings : MonoBehaviour
             SpawnManager.Instance.ApplyMapIndex(currentMapIndex);
             SpawnManager.Instance.ResetForNewMap();
         }
-        if(currentMapIndex > 0)
+        if (currentMapIndex > 0)
         {
             BossManager.Instance.StartBossFight();
+            canStartAfterCutscene = true;
+
+         
+            EnterWaitingForStart();
         }
+
         //if (sm != null)
         //{
         //    sm.ApplyMapIndex(currentMapIndex);
@@ -395,6 +432,7 @@ public class GameSettings : MonoBehaviour
     private IEnumerator CountdownRoutine()
     {
         int count = 3;
+        keyTutorial.SetActive(false);
         countdownText.gameObject.SetActive(true);
         AudioSettings.Instance.PlaySFX(AudioSettings.Instance.countDown);
         while (count > 0)
@@ -414,6 +452,8 @@ public class GameSettings : MonoBehaviour
         // Now start the actual gameplay
         isGameOn = true;
         Time.timeScale = 1f;
+        if (currentMapIndex > 0) // boss mapa
+            BossManager.Instance.canAttack = true;
     }
     public string GetDifficultyKey()
     {
@@ -496,6 +536,20 @@ public class GameSettings : MonoBehaviour
             CutsceneManager.Instance.OnCutsceneEnded -= HandleCutsceneEnded;
     }
 
+    public void EnterWaitingForStart()
+    {
+        isGameOn = false;
+        hasStarted = true;
+
+        if (countdownText != null)
+        {
+            countdownText.gameObject.SetActive(true);
+            countdownText.text = "Press [Space] to Begin";
+        }
+
+        if (keyTutorial != null)
+            keyTutorial.SetActive(true);
+    }
 
 
     public void ExitGame()

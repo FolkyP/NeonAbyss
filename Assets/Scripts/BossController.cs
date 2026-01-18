@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 
 public class BossController : MonoBehaviour
@@ -131,6 +130,7 @@ public class BossController : MonoBehaviour
             lookRoutine = StartCoroutine(RotateToPlayerRoutine());
             ScheduleNextLook();
         }
+        if (!BossManager.Instance.canAttack) return;
 
         HandlePhaseAttacks();
     }

@@ -17,6 +17,9 @@ public class BossManager : MonoBehaviour
     [Range(0f, 1f)] public float hitOpacity = 0.6f;
     public float fadeSpeed = 4f;
 
+    [HideInInspector]
+    public bool canAttack = false; // default false
+
     public List<GameObject> BossList;
     public Material newMaterial1;
     public Material newMaterial2;
