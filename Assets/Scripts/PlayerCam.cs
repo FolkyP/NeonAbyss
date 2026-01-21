@@ -36,7 +36,7 @@ public class PlayerCam : MonoBehaviour
 
     private void Update()
     {
-        if (gameSettings != null && gameSettings.isGameStopped)
+        if (gameSettings != null && gameSettings.isGameStopped || GameSettings.Instance.InputLocked)
         {
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;

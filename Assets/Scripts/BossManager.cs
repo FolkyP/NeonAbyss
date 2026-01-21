@@ -69,10 +69,19 @@ public class BossManager : MonoBehaviour
     [Header("Shield Crystals")]
     public int totalCrystals = 3;         // kolik jich ve štítu je
     private int destroyedCrystals = 0;
+
+    public TMP_Text totalCrystext;
+
+    public int baseBossHp = 5000;
+
     private void Awake()
     {
         if (Instance != null && Instance != this) Destroy(gameObject);
         Instance = this;
+    }
+    private void Start()
+    {
+        totalCrystext.text = "0"+ "/"+ "3";
     }
     void UpdateHpText()
     {
@@ -89,7 +98,8 @@ public class BossManager : MonoBehaviour
             CrystalManager.Instance.StartBuffSpawners(leftSpawn, rightSpawn);
         }
         bossPrefab.GetComponent<MeshRenderer>().materials[1] = newMaterial1;
-
+        float bhp = GameSettings.Instance.bossHealthMultiplier;
+        bossHp = Mathf.RoundToInt(baseBossHp * bhp);
         maxBossHp = bossHp;
         bossHPSlider.gameObject.SetActive(true);
 
@@ -287,7 +297,7 @@ public class BossManager : MonoBehaviour
             SetPhaseGlow(3);
             SetHpTextColor(3);
             BossPhaseChange(3);
-
+            totalCrystext.gameObject.SetActive(true);
             // ensure UI shows new sprite and value immediately
             bossHPSlider.value = bossHp;
             targetHp = bossHp;
@@ -425,6 +435,7 @@ public class BossManager : MonoBehaviour
         destroyedCrystals++;
 
         Debug.Log("Crystal Destroyed! (" + destroyedCrystals + "/" + totalCrystals + ")");
+        totalCrystext.text = destroyedCrystals + "/" + totalCrystals;
         if (panel != null)
         {
             StartCoroutine(HandlePanelAfterCrystalDestroyed(panel));

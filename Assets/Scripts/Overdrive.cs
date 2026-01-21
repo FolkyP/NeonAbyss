@@ -404,7 +404,7 @@ public class Overdrive : MonoBehaviour
         if (currentPercent >= 100f && prev < 100f)
         {
             Debug.Log("Overdrive: fully charged!");
-            AudioSettings.Instance.PlaySFX(readyAb);
+            AudioSettings.Instance.PlaySFXAbility(readyAb);
             OnFullyCharged?.Invoke();
         }
     }

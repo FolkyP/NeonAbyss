@@ -26,7 +26,8 @@ public class CutsceneManager : MonoBehaviour
     public CutsceneConfig startConfig;
     public CutsceneConfig endMapConfig;
     public CutsceneConfig endGameConfig;
-
+    [Header("Cutscene-specific objects")]
+    public GameObject cutscene1Texts;
     [Header("Cameras")]
     public GameObject cutsceneCamera;
     public GameObject playerCamera;
@@ -39,7 +40,9 @@ public class CutsceneManager : MonoBehaviour
     bool canSkip;
     public bool isCutscenePlaying = false;
     public System.Action<PlayableDirector> OnCutsceneEnded;
+    GameObject activeCutsceneObject;
 
+    public GameObject tutorial1;
     void Awake()
     {
         if (Instance == null)
@@ -81,7 +84,11 @@ public class CutsceneManager : MonoBehaviour
 
         Disable(); // nastaví isCutscenePlaying = true
         SwitchToCutsceneCamera();
-
+        if (cutscene1Texts != null && config == startConfig)
+        {
+            activeCutsceneObject = cutscene1Texts;
+            activeCutsceneObject.SetActive(true);
+        }
         // zabezpeèení souèástí UI (aby neskákal NullReference)
         if (skipText != null) skipText.SetActive(false);
         canSkip = false;
@@ -143,7 +150,30 @@ public class CutsceneManager : MonoBehaviour
             PlayerPrefs.SetInt(currentConfig.prefsKey, 1);
             PlayerPrefs.Save();
         }
+
         OnCutsceneEnded?.Invoke(currentDirector);
+        if (activeCutsceneObject != null)
+        {
+            activeCutsceneObject.SetActive(false);
+            activeCutsceneObject = null;
+        }
+        if (currentConfig == startConfig)
+        {
+            //// Pokud tutorial ještì nebyl dokonèen, zobrazíme ho
+            //if (PlayerPrefs.GetInt("Tutorial_Completed", 0) == 0)
+            //{
+            //    GameSettings.Instance.InputLocked = true;
+            //    tutorial1.SetActive(true);
+            //}
+            //else
+            //{
+            //    // Jinak rovnou povolíme input a pokraèujeme
+            //    GameSettings.Instance.InputLocked = false;
+            //}
+            GameSettings.Instance.InputLocked = true;
+            tutorial1.SetActive(true);
+        }
+
         currentDirector = null;
         currentConfig = null;
         Enable();

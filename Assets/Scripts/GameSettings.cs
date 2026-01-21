@@ -70,6 +70,24 @@ public class GameSettings : MonoBehaviour
     public WeaponManager weaponManager;
     public CutsceneManager cutsceneManager;
     private bool canStartAfterCutscene = false;
+    public bool InputLocked = false;
+
+
+    public enum Difficulty
+    {
+        Easy,
+        Normal,
+        Hard
+    }
+
+    public Difficulty currentDifficulty = Difficulty.Normal;
+
+    [Header("Difficulty multipliers")]
+    public float enemyHealthMultiplier = 1f;
+    public float enemyDamageMultiplier = 1f;
+
+    public float bossHealthMultiplier = 1f;
+    public float bossDamageMultiplier = 1f;
     private void Update()
     {
         // 1) Bezpeèná null-check pro cutsceneManager
@@ -81,11 +99,10 @@ public class GameSettings : MonoBehaviour
         // 2) P musí fungovat i když èekáme na cutscenu/mezery — proto kontrolujeme ho døív.
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-            // Volitelnì: jen pokud je hra spuštìná
             if (isGameOn || isGameStopped)
                 TogglePause();
             else
-                Debug.Log("P stisknuto, ale hra není aktivní (isGameOn==false).");
+                        Debug.Log("P stisknuto, ale hra není aktivní (isGameOn==false).");
         }
 
         if (cutsceneManager != null && cutsceneManager.isCutscenePlaying)
@@ -95,7 +112,7 @@ public class GameSettings : MonoBehaviour
 
 
         // Space pro start (zùstává)
-        if (hasStarted && Input.GetKeyDown(KeyCode.Space))
+        if (hasStarted && Input.GetKeyDown(KeyCode.Space) && !InputLocked)
         {
             StartCountDown();
             hasStarted = false; // Prevent multiple starts
@@ -248,6 +265,7 @@ public class GameSettings : MonoBehaviour
             PlayerPrefs.SetString("Difficulty", "Hard");
 
         PlayerPrefs.Save();
+        if (Score.Instance != null) Score.Instance.OnDifficultyChanged();
     }
 
 
@@ -361,24 +379,31 @@ public class GameSettings : MonoBehaviour
         }
         if (selectedButton == easyButton)
         {
-            Debug.Log("Starting game with Easy difficulty");
-            // Set parameters for easy
+            currentDifficulty = Difficulty.Easy;
+            enemyHealthMultiplier = 0.8f;
+            enemyDamageMultiplier = 0.8f;
+            bossHealthMultiplier = 0.7f;
         }
         else if (selectedButton == normalButton)
         {
-            Debug.Log("Starting game with Normal difficulty");
-            // Set parameters for normal
+            currentDifficulty = Difficulty.Normal;
+            enemyHealthMultiplier = 1f;
+            enemyDamageMultiplier = 1f;
+            bossHealthMultiplier = 1f;
         }
         else if (selectedButton == hardButton)
         {
-            Debug.Log("Starting game with Hard difficulty");
-            // Set parameters for hard
+            currentDifficulty = Difficulty.Hard;
+            enemyHealthMultiplier = 1.4f;
+            enemyDamageMultiplier = 1.5f;
+            bossHealthMultiplier = 1.6f;
         }
 
         cameraUI.gameObject.SetActive(false);
         StartPlane.SetActive(true);
-        
 
+        if (Score.Instance != null) Score.Instance.ResetScore();
+        if (Score.Instance != null) Score.Instance.OnDifficultyChanged();
         //EnableGameplayAfterIntro();
         Time.timeScale = 1f; // pause while counting down
         hasStarted = true;
@@ -470,7 +495,14 @@ public class GameSettings : MonoBehaviour
     }
     public void Death()
     {
+        if (Score.Instance != null) Score.Instance.SaveMaxScore();
         deathScreen.SetActive(true);
+    }
+
+    public void Win()
+    {
+        if (Score.Instance != null) Score.Instance.SaveMaxScore();
+        // vaše UI pro výhru...
     }
     public void ReturnToMainMenu()
     {

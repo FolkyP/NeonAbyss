@@ -149,7 +149,8 @@ public class SpawnManager : MonoBehaviour
                     {
                         enemyAI.player = GameObject.Find("MainCharacter");
                     }
-                    
+                    ApplyDifficultyModifiers(go);
+
                 }
             }
             float wait = 3f;
@@ -188,7 +189,8 @@ public class SpawnManager : MonoBehaviour
 
 
                     }
-                    // aplikuj modifikátory pro fázi 2
+                    ApplyDifficultyModifiers(go);
+
                     if (inPhase2)
                     {
                         ApplyPhase2Modifiers(go);
@@ -221,6 +223,28 @@ public class SpawnManager : MonoBehaviour
             }
         }
     }
+    private void ApplyDifficultyModifiers(GameObject enemy)
+    {
+        if (GameSettings.Instance == null) return;
+
+        var gs = GameSettings.Instance;
+
+        var eh = enemy.GetComponent<EnemyHealth>();
+        if (eh != null)
+        {
+            eh.maxHealth *= gs.enemyHealthMultiplier;
+            eh.currentHealth = eh.maxHealth;
+        }
+
+        var ai = enemy.GetComponent<EnemyAI>();
+        if (ai != null)
+        {
+            ai.attackDamage = Mathf.CeilToInt(ai.attackDamage * gs.enemyDamageMultiplier);
+        }
+
+       
+    }
+
     #endregion
     public void ApplyMapIndex(int index)
     {

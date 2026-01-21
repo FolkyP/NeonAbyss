@@ -65,7 +65,12 @@ public class AudioSettings : MonoBehaviour
         if (clip != null && sfxSource != null)
             sfxSource.PlayOneShot(clip);
     }
-
+    public void PlaySFXAbility(AudioClip clip) // Tuto funkci volá EnemyAI, ale také UI (HoverSound, ClickSound)
+    {
+        // Ponecháme PlaySFX pro kompatibilitu s EnemyAI, který používá sfxSource
+        if (clip != null && sfxSource != null)
+            sfxSource.PlayOneShot(clip,3.5f);
+    }
     // Nová funkce pro UI zvuky
     private void PlayUISFX(AudioClip clip)
     {
