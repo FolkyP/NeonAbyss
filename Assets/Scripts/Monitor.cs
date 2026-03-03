@@ -138,8 +138,12 @@ public class Monitor : MonoBehaviour
         deathcolliderColor.SetActive(false);
 
         // 20s pauza
+        AudioSettings.Instance.MuteMusic(true);
+
         yield return Countdown(timerPause);
         StartPhase2();
+        AudioSettings.Instance.MuteMusic(false);
+
 
         // 30s pøežití
         yield return Countdown(timerSurvive);
@@ -237,22 +241,30 @@ public class Monitor : MonoBehaviour
             }
         }
     }
-
     private IEnumerator StartElevatorSequence()
     {
         Debug.Log("ELEVATOR CUTSCENE START");
 
-        // Zastav hráèe, vypni UI, pøípadnì pøehraj animaci
-       // PlayerController.Instance.Freeze(true);
+
         GameSettings.Instance.playerUI.SetActive(false);
 
-        // tady mùžeš pøehrát animaci
-        yield return new WaitForSeconds(1f); // simulace cutscény
 
-        Debug.Log("CUTSCENE DONE – LOADING NEXT MAP");
+        if (CutsceneManager.Instance != null && CutsceneManager.Instance.endMapConfig != null)
+        {
+            CutsceneManager.Instance.endMapConfig.useCutsceneCamera = false;
+            CutsceneManager.Instance.PlayEndMapCutscene(); // volá PlayCutscene(endMapConfig)
+            GameSettings.Instance.LoadNextMap();
 
-        // PØEPNI NA DALŠÍ MAPU
-        GameSettings.Instance.LoadNextMap();
+        }
+        else
+        {
+            Debug.LogWarning("CutsceneManager nebo endMapConfig není nastavený.");
+        }
+
+        yield return new WaitUntil(() => CutsceneManager.Instance == null || !CutsceneManager.Instance.isCutscenePlaying);
+
+
+        yield return null;
+
     }
-
 }

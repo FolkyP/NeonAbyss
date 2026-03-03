@@ -72,7 +72,9 @@ public class GameSettings : MonoBehaviour
     private bool canStartAfterCutscene = false;
     public bool InputLocked = false;
 
-
+    public TMP_Text finalScore;
+    public TMP_Text difText;
+    public GameObject winCanvas;
     public enum Difficulty
     {
         Easy,
@@ -452,9 +454,24 @@ public class GameSettings : MonoBehaviour
         // Povolíme èekání na mezerník v Update()
         hasStarted = true;
 
-        
+        PlayerMovement pm = FindObjectOfType<PlayerMovement>();
+        if (pm != null)
+        {
+            pm.FreezePlayerForMapTransition(true); // true = kompletnì zamrazit
+                                                   // Nechte odemknout až když zaène odpoèet nebo cutscene skonèí:
+            StartCoroutine(UnfreezeWhenReady(pm));
+        }
+
     }
-    private IEnumerator CountdownRoutine()
+    
+
+private IEnumerator UnfreezeWhenReady(PlayerMovement pm)
+{
+    yield return new WaitUntil(() => isGameOn == true || canStartAfterCutscene == true);
+    yield return null;
+    pm.UnfreezePlayerAfterTransition();
+}
+private IEnumerator CountdownRoutine()
     {
         int count = 3;
         keyTutorial.SetActive(false);
@@ -475,6 +492,17 @@ public class GameSettings : MonoBehaviour
         countdownText.gameObject.SetActive(false);
 
         // Now start the actual gameplay
+        if (AudioSettings.Instance != null)
+        {
+
+            AudioSettings.Instance.CrossfadeTo(
+                AudioSettings.Instance.gameplayMusic,
+                0f,
+                true
+            );
+            AudioSettings.Instance.MuteMusic(false);
+
+        }
         isGameOn = true;
         Time.timeScale = 1f;
         if (currentMapIndex > 0) // boss mapa
@@ -498,11 +526,48 @@ public class GameSettings : MonoBehaviour
         if (Score.Instance != null) Score.Instance.SaveMaxScore();
         deathScreen.SetActive(true);
     }
-
+    [ContextMenu("Test Win")] // Opravený popisek
     public void Win()
     {
-        if (Score.Instance != null) Score.Instance.SaveMaxScore();
-        // vaše UI pro výhru...
+        isGameOn = false;
+        InputLocked = true;
+
+        // 2. Bezpeèné uložení a vypsání skóre
+        if (Score.Instance != null)
+        {
+            Score.Instance.SaveMaxScore();
+            finalScore.text = Score.Instance.score.ToString();
+        }
+        else
+        {
+            finalScore.text = "0";
+        }
+
+        // 3. UI a vizuál
+        winCanvas.SetActive(true);
+        playerCanvas.SetActive(false);
+        difText.text = $"DIFFICULTY: {currentDifficulty}";
+
+        // Nastavení barev podle obtížnosti
+        switch (currentDifficulty)
+        {
+            case Difficulty.Easy:
+                difText.color = Color.green;
+                break;
+            case Difficulty.Normal:
+                difText.color = Color.yellow;
+                break;
+            case Difficulty.Hard:
+                difText.color = Color.red;
+                break;
+        }
+
+        // 4. Cutscéna a kurzor
+        if (CutsceneManager.Instance != null)
+        {
+            CutsceneManager.Instance.PlayEndGameCutscene();
+        }
+
     }
     public void ReturnToMainMenu()
     {
@@ -514,6 +579,11 @@ public class GameSettings : MonoBehaviour
     }
     void HandleCutsceneEnded(PlayableDirector director)
     {
+        if (winCanvas != null && winCanvas.activeSelf)
+        {
+            Debug.Log("Endgame cutscene skonèila. Necháváme zobrazený Win screen.");
+            return;
+        }
         EnableGameplayAfterIntro();
 
         // Aktivujeme objekty hry

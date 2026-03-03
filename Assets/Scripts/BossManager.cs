@@ -72,8 +72,13 @@ public class BossManager : MonoBehaviour
 
     public TMP_Text totalCrystext;
 
-    public int baseBossHp = 5000;
+    public int baseBossHp = 4000;
 
+    [Header("Boss Model Flash")]
+    public Color modelFlashColor = Color.white;
+    public float modelFlashDuration = 0.1f;
+    private Coroutine modelFlashRoutine;
+    public List<GameObject> bossBlik;
     private void Awake()
     {
         if (Instance != null && Instance != this) Destroy(gameObject);
@@ -92,7 +97,16 @@ public class BossManager : MonoBehaviour
     public void StartBossFight()
     {
         Vector3 leftSpawn = new Vector3(-37, 0, 105); // Change to your coordinates
-        Vector3 rightSpawn = new Vector3(37, 0, 33);
+        Vector3 rightSpawn = new Vector3(37, 0, 33); if (AudioSettings.Instance != null)
+        {
+            AudioSettings.Instance.CrossfadeTo(
+                AudioSettings.Instance.bossMusic,
+                0f,
+                true
+            );
+            AudioSettings.Instance.MuteMusic(true);
+
+        }
         if (CrystalManager.Instance != null)
         {
             CrystalManager.Instance.StartBuffSpawners(leftSpawn, rightSpawn);
@@ -155,12 +169,15 @@ public class BossManager : MonoBehaviour
 
         flashRoutine = StartCoroutine(FlashHpBar());
 
+        
+
         if (bossHp <= 0)
         {
             bossController.StopAllAttacks();
             BossDefeated();
         }
     }
+    
     private IEnumerator ShieldHitFlash()
     {
         // Zvýšení opacity
@@ -362,6 +379,7 @@ public class BossManager : MonoBehaviour
         SpawnManager.Instance.StopAndKillAll();
         SpawnManager.Instance.isPhaseForSpawn = false;
         Destroy(bossPrefab);
+        GameSettings.Instance.Win();
     }
     IEnumerator FlashHpBar()
     {

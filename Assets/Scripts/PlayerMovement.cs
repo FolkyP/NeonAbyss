@@ -138,14 +138,47 @@ public class PlayerMovement : MonoBehaviour
     }
     private void FixedUpdate()
     {
+        // Pokud je hra vypnutá nebo je movement zamèen, zrušíme veškeré horizontální pohyby
+        if (GameSettings.Instance == null || !GameSettings.Instance.isGameOn || movementLocked)
+        {
+            // zachováme vertikální rychlost (pø. gravitaci) nebo úplnì zastavíme:
+            rb.velocity = new Vector3(0f, rb.velocity.y, 0f); // pokud chcete zachovat padání
+                                                              // rb.velocity = Vector3.zero; // pokud chcete úplnì zamrazit i pád
+            return;
+        }
+
         if (GameSettings.Instance.isOverDriveActive)
         {
             // úplné zastavení pohybu po zemi
             rb.velocity = new Vector3(0f, rb.velocity.y, 0f);
             return;
         }
+
         MovePl();
     }
+    // PlayerMovement.cs
+    public void FreezePlayerForMapTransition(bool freezeCompletely = false)
+    {
+        movementLocked = true;
+        dashing = false;
+        // vynulujeme horizontální rychlost
+        rb.velocity = new Vector3(0f, freezeCompletely ? 0f : rb.velocity.y, 0f);
+        rb.angularVelocity = Vector3.zero;
+
+        // pokud chcete naprosto zablokovat fyziku (cutscene), použijte isKinematic:
+        if (freezeCompletely)
+        {
+            rb.isKinematic = true;
+        }
+    }
+
+    // a odblokování
+    public void UnfreezePlayerAfterTransition()
+    {
+        movementLocked = false;
+        rb.isKinematic = false;
+    }
+
 
     private void MovePl()
     {

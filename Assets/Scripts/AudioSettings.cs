@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using System.Collections;
 
 public class AudioSettings : MonoBehaviour
 {
@@ -39,6 +40,14 @@ public class AudioSettings : MonoBehaviour
 
     [Tooltip("Dedicated UI sound effects source (Clicks, Hovers)")]
     [SerializeField] public AudioSource uiSource; // <-- NOVÝ ZDROJ
+
+    [Header("Music Tracks")]
+    public AudioClip mainMenuMusic;
+    public AudioClip gameplayMusic;
+    public AudioClip bossMusic;
+    public AudioClip victoryMusic;
+
+    private Coroutine musicFadeCoroutine;
     public void HoverSound()
     {
         PlayUISFX(hover);
@@ -103,6 +112,7 @@ public class AudioSettings : MonoBehaviour
         sfxSound.onValueChanged.AddListener(OnSfxChanged);
 
         AttachButtonSounds();
+        PlayMusic(mainMenuMusic);
     }
 
     private void OnMasterChanged(float value)
@@ -220,4 +230,74 @@ public class AudioSettings : MonoBehaviour
 
         UpdateTexts();
     }
+    public void PlayMusic(AudioClip newClip, bool loop = true)
+    {
+        if (musicSource == null || newClip == null) return;
+
+        // Pokud už tato hudba hraje, nic nedìlej
+        if (musicSource.clip == newClip && musicSource.isPlaying) return;
+
+        musicSource.Stop();
+        musicSource.clip = newClip;
+        musicSource.loop = loop;
+        musicSource.Play();
+    }
+    // Vypne hudbu (nebo ji pauzne)
+    public void MuteMusic(bool mute)
+    {
+        if (musicSource == null) return;
+
+        if (mute)
+            musicSource.Pause(); // Hudba zùstane na stejném místì
+        else
+            musicSource.UnPause(); // Hudba pokraèuje
+    }
+    public void CrossfadeTo(AudioClip newClip, float fadeTime = 1f, bool loop = true)
+    {
+        if (musicSource == null || newClip == null) return;
+        if (musicFadeCoroutine != null)
+            StopCoroutine(musicFadeCoroutine);
+
+        musicFadeCoroutine = StartCoroutine(CrossfadeCoroutine(newClip, fadeTime, loop));
+    }
+
+    private IEnumerator CrossfadeCoroutine(AudioClip newClip, float fadeTime, bool loop)
+    {
+        float startVolume = musicSource.volume;
+
+        // Fade out
+        float t = 0f;
+        while (t < fadeTime)
+        {
+            t += Time.unscaledDeltaTime;
+            musicSource.volume = Mathf.Lerp(startVolume, 0f, t / fadeTime);
+            yield return null;
+        }
+
+        musicSource.Stop();
+        musicSource.clip = newClip;
+        musicSource.loop = loop;
+        musicSource.Play();
+
+        float targetVolume = workingMusic / 100f;
+
+        // Fade in
+        t = 0f;
+        while (t < fadeTime)
+        {
+            t += Time.unscaledDeltaTime;
+            musicSource.volume = Mathf.Lerp(0f, targetVolume, t / fadeTime);
+            yield return null;
+        }
+
+        musicSource.volume = targetVolume;
+        musicFadeCoroutine = null;
+    }
+
+    // Alternativa: Úplné zastavení
+    public void StopMusic() => musicSource.Stop();
+    public void PlayMenu() => PlayMusic(mainMenuMusic);
+    public void PlayGameplay() => PlayMusic(gameplayMusic);
+    public void PlayBoss() => PlayMusic(bossMusic);
+    public void PlayVictory() => PlayMusic(victoryMusic, false);
 }

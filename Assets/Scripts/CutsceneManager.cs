@@ -16,6 +16,9 @@ public class CutsceneConfig
     public bool allowSkipAfterFirstPlay = true;
     [Tooltip("Seconds to wait before allowing skip (and showing skip UI)")]
     public float skipDelay = 2f;
+
+    [Tooltip("If true, CutsceneManager will switch to cutsceneCamera. If false, player camera remains active.")]
+    public bool useCutsceneCamera = true;
 }
 
 public class CutsceneManager : MonoBehaviour
@@ -39,6 +42,7 @@ public class CutsceneManager : MonoBehaviour
     CutsceneConfig currentConfig;
     bool canSkip;
     public bool isCutscenePlaying = false;
+    bool switchedCameraInThisCutscene = false;
     public System.Action<PlayableDirector> OnCutsceneEnded;
     GameObject activeCutsceneObject;
 
@@ -78,12 +82,21 @@ public class CutsceneManager : MonoBehaviour
             Debug.LogWarning("CutsceneManager: PlayCutscene - config nebo director je null.");
             return;
         }
-
+        if (AudioSettings.Instance != null)
+            AudioSettings.Instance.MuteMusic(true);
         currentConfig = config;
         currentDirector = config.director;
 
         Disable(); // nastavÌ isCutscenePlaying = true
-        SwitchToCutsceneCamera();
+        switchedCameraInThisCutscene = config.useCutsceneCamera;
+        if (switchedCameraInThisCutscene)
+            SwitchToCutsceneCamera();
+        else
+        {
+            // zajistit, ûe cutsceneCamera je vypnut· (nebo neaktivnÌ)
+            if (cutsceneCamera != null) cutsceneCamera.SetActive(false);
+            // player camera nech·me aktivnÌ (nep¯epÌn·me)
+        }
         if (cutscene1Texts != null && config == startConfig)
         {
             activeCutsceneObject = cutscene1Texts;
@@ -141,8 +154,8 @@ public class CutsceneManager : MonoBehaviour
         canSkip = false;
         if (skipText != null) skipText.SetActive(false);
 
-        SwitchToPlayerCamera();
-         // nastavÌ isCutscenePlaying = false
+        if (switchedCameraInThisCutscene)
+            SwitchToPlayerCamera();
 
         // oznaËÌme tuto konkrÈtnÌ cutscÈnu jako p¯ehranou (pokud m·me currentConfig)
         if (currentConfig != null && !string.IsNullOrEmpty(currentConfig.prefsKey))
@@ -150,7 +163,15 @@ public class CutsceneManager : MonoBehaviour
             PlayerPrefs.SetInt(currentConfig.prefsKey, 1);
             PlayerPrefs.Save();
         }
-
+        CutsceneConfig finishedConfig = currentConfig;
+        if (AudioSettings.Instance != null)
+        {
+            
+            
+                // Pro ostatnÌ p¯Ìpady (t¯eba cutscÈna uprost¯ed boje) jen vraù p˘vodnÌ zvuk
+                AudioSettings.Instance.MuteMusic(true);
+            
+        }
         OnCutsceneEnded?.Invoke(currentDirector);
         if (activeCutsceneObject != null)
         {
@@ -173,7 +194,7 @@ public class CutsceneManager : MonoBehaviour
             GameSettings.Instance.InputLocked = true;
             tutorial1.SetActive(true);
         }
-
+        
         currentDirector = null;
         currentConfig = null;
         Enable();
@@ -181,6 +202,7 @@ public class CutsceneManager : MonoBehaviour
 
     void EnableSkip()
     {
+        if (currentConfig == endGameConfig) return;
         canSkip = true;
         if (skipText != null) skipText.SetActive(true);
     }

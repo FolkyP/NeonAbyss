@@ -91,6 +91,11 @@ public class GrenadeLauncher : WeaponBase
                 bestHit = hit;
                 break;
             }
+            if (hit.collider.GetComponentInParent<BossController>() != null || hit.collider.CompareTag("Enemy"))
+            {
+               
+                break;
+            }
 
             // ignore everything else (walls, props)
         }
@@ -135,13 +140,13 @@ public class GrenadeLauncher : WeaponBase
             Destroy(fx, 0.5f);
         }
 
-        // Boss damage (parent-safe)
-        BossManager boss = hit.collider.GetComponentInParent<BossManager>();
+        BossController boss = hit.collider.GetComponentInParent<BossController>();
         if (boss != null)
         {
-            boss.ReciveDamage((int)damage);
+            BossManager.Instance.ReciveDamage((int)damage);
             return;
         }
+
 
         // Ostatní
         GrenadeImpact impact = new GameObject("GrenadeImpact").AddComponent<GrenadeImpact>();

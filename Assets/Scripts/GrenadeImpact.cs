@@ -126,7 +126,22 @@ public class GrenadeImpact : MonoBehaviour
                 }
                 continue;
             }
+            // --- BOSS HANDLING ---
+            BossManager boss = col.GetComponentInParent<BossManager>();
+            if (boss != null)
+            {
+                Vector3 closest = col.ClosestPoint(pos);
+                float dist = Vector3.Distance(pos, closest);
+                float falloff = Mathf.Clamp01(1f - dist / explosionRadius);
+                float finalDamage = damage * falloff;
 
+                if (finalDamage > 0f)
+                {
+                    boss.ReciveDamage(Mathf.RoundToInt(finalDamage));
+                    Hitmarker.Instance?.ShowHit(boss.transform.position, finalDamage, false);
+                }
+                continue;
+            }
             // If you have other damageable objects (e.g. destructible crates) that implement an interface,
             // you can detect and apply damage here. Example (optional):
             // IDamageable dmg = col.GetComponentInParent<IDamageable>();
