@@ -158,17 +158,16 @@ public class WeaponManager : MonoBehaviour
     }
     public void AddAmmoToCurrentWeapon()
     {
-        WeaponBase current = weapons[currentIndex];
+        for (int i = 0; i < weapons.Count; i++)
+        {
+            WeaponBase w = weapons[i];
 
-        if (current.infiniteAmmo)
-            return;
+            if (w.infiniteAmmo) continue;
 
-        // Read amount from the ammo table
-        int amount = ammoPickupAmount[currentIndex];
+            w.carriedAmmo += ammoPickupAmount[i];
 
-        current.carriedAmmo += amount;
-
-        Debug.Log($"Added {amount} ammo to {current.weaponName}");
+            Debug.Log($"Added {ammoPickupAmount[i]} ammo to {w.weaponName}");
+        }
 
         UpdateWeaponUI();
     }

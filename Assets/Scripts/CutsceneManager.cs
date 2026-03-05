@@ -166,11 +166,10 @@ public class CutsceneManager : MonoBehaviour
         CutsceneConfig finishedConfig = currentConfig;
         if (AudioSettings.Instance != null)
         {
-            
-            
-                // Pro ostatní pøípady (tøeba cutscéna uprostøed boje) jen vra pùvodní zvuk
-                AudioSettings.Instance.MuteMusic(true);
-            
+
+
+            // Pro ostatní pøípady (tøeba cutscéna uprostøed boje) jen vra pùvodní zvuk
+            AudioSettings.Instance.MuteMusic(false);
         }
         OnCutsceneEnded?.Invoke(currentDirector);
         if (activeCutsceneObject != null)
@@ -236,7 +235,17 @@ public class CutsceneManager : MonoBehaviour
             if (listener != null) listener.enabled = true;
         }
     }
+    public void PauseCutscene()
+    {
+        if (currentDirector == null) return;
+        currentDirector.Pause();
+    }
 
+    public void ResumeCutscene()
+    {
+        if (currentDirector == null) return;
+        currentDirector.Resume();
+    }
     public void Disable()
     {
         isCutscenePlaying = true;

@@ -34,37 +34,37 @@ public class CrystalManager : MonoBehaviour
     }
     public void DropCrystals(Vector3 pozice)
     {
+        if (totalCrystals == 4) return;
+        Vector3 vector3 = new Vector3(pozice.x, 0.15f, pozice.z);
+        GameObject crystal = Instantiate(crystalPrefab, vector3, Quaternion.identity);
 
-        
-            if (totalCrystals == 4) return;
-            Vector3 vector3 = new Vector3(pozice.x, 0.15f, pozice.z);
-            GameObject crystal = Instantiate(crystalPrefab, vector3, Quaternion.identity);
-            
-            crystal.transform.rotation = Quaternion.Euler(-90, 0, 0);
-            crystal.AddComponent<CrystalItem>();
-            SphereCollider col = crystal.AddComponent<SphereCollider>();
-            col.isTrigger = true;
-            col.radius = 0.1f;
+        crystal.transform.rotation = Quaternion.Euler(-90, 0, 0);
+        crystal.transform.localScale *= 1.5f; // make it bigger
+
+        crystal.AddComponent<CrystalItem>();
+        crystal.AddComponent<CrystalPulse>(); // attach pulse
+        SphereCollider col = crystal.AddComponent<SphereCollider>();
+        col.isTrigger = true;
+        col.radius = 0.1f;
         totalCrystals++;
-
-          
     }
-    
+
     public void PickCrystal()
     {
         if (crystalCount < 4)
         {
             AudioSettings.Instance.PlaySFX(pick);
             crystalCount++;
-            
-            Debug.Log("Crystals: " + crystalCount);
             count.text = crystalCount.ToString();
+
+            if (crystalCount == 4)
+                WaypointGuide.Instance?.ShowGuideToGenerator();
         }
     }
     public void Drop(Vector3 pozice)
     {
         float random = Random.value;
-        if (random > .60f)
+        if (random > .80f)
         {
             DropCrystals(pozice);
         }

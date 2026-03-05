@@ -56,18 +56,21 @@ public class PlayerLife : MonoBehaviour
     {
         AudioSettings.Instance.PlaySFX(damageSound);
 
-        // Shield first
+        bool shieldWasUp = currentShield > 0; // shield alive before hit
+
         int shieldDamage = Mathf.Min(currentShield, damage);
         currentShield -= shieldDamage;
         damage -= shieldDamage;
 
-        // Health next
         if (damage > 0)
             currentHealth -= damage;
 
-        // Clamp
         currentHealth = Mathf.Clamp(currentHealth, 0, maxOverHealth);
         currentShield = Mathf.Clamp(currentShield, 0, maxOverShield);
+
+        // Flash cyan if shield just got destroyed
+        if (shieldWasUp && currentShield <= 0 && vignette != null)
+            vignette.FlashColor(new Color(0f, 1f, 1f), 0.4f);
 
         UpdateUI();
 

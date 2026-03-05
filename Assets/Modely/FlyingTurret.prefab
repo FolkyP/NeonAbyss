@@ -800,6 +800,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   enemyType: 1
+  gloryKillRange: 1.8
+  glowColor: {r: 1, g: 0, b: 1, a: 1}
+  glowIntensity: 3
   player: {fileID: 0}
   firePoint: {fileID: 2796174792730469794}
   pew: {fileID: 2796174793032946137}
@@ -816,11 +819,11 @@ MonoBehaviour:
   explosionMaterial: {fileID: 2100000, guid: ac0b1c861e450114dbdc051330573782, type: 2}
   chaseRange: 10
   attackRange: 2
-  attackDamage: 5
-  attackCooldown: 1.5
-  shootRange: 80
+  attackDamage: 20
+  attackCooldown: 1.4
+  shootRange: 85
   rotationSpeed: 10
-  projectileSpeed: 85
+  projectileSpeed: 75
   floatAmplitude: 0.5
   floatFrequency: 1
   maxScale: 3
@@ -831,6 +834,8 @@ MonoBehaviour:
   isDead: 0
   target: {fileID: 0}
   rotationSpeedExplo: 10
+  previewColor: {r: 1, g: 0.85, b: 0.2, a: 1}
+  previewIntensity: 4
 --- !u!114 &2796174792716545838
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -845,6 +850,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxHealth: 50
   currentHealth: 0
+  gloryKillThreshold: 0.2
 --- !u!195 &2796174792716545839
 NavMeshAgent:
   m_ObjectHideFlags: 0

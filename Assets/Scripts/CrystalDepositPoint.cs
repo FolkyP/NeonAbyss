@@ -133,6 +133,8 @@ public class CrystalDepositPoint : MonoBehaviour
         AudioSettings.Instance.PlaySFX(gate);
         if (gateCollider != null)
             gateCollider.enabled = false;
+
+        WaypointGuide.Instance?.ShowGuideToMonitor(); // switch guide target
     }
     public void CloseGate()
     {

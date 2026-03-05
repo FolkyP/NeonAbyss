@@ -133,25 +133,25 @@ public class Monitor : MonoBehaviour
     {
         // 10s  zavøení brány
         deathcolliderColor.SetActive(true);
-        yield return Countdown(timerCloseGate);
+        yield return Countdown(timerCloseGate,1);
         crystalDepositPoint.CloseGate();
         deathcolliderColor.SetActive(false);
 
         // 20s pauza
         AudioSettings.Instance.MuteMusic(true);
 
-        yield return Countdown(timerPause);
+        yield return Countdown(timerPause,2);
         StartPhase2();
         AudioSettings.Instance.MuteMusic(false);
 
 
         // 30s pøežití
-        yield return Countdown(timerSurvive);
+        yield return Countdown(timerSurvive,3);
         EndSurvive();
         
     }
 
-    private IEnumerator Countdown(float duration)
+    private IEnumerator Countdown(float duration,int cisilko)
     {
         float timeLeft = duration;
         nextBeepTime = 0f;
@@ -164,7 +164,19 @@ public class Monitor : MonoBehaviour
 
             int minutes = Mathf.FloorToInt(timeLeft / 60f);
             int seconds = Mathf.CeilToInt(timeLeft % 60f);
-            timeText.text = $"{minutes:00}:{seconds:00}";
+
+            switch (cisilko)
+            {
+                case 1:
+                    timeText.text = $"Get out! {minutes:00}:{seconds:00}";
+                    break;
+                case 2:
+                    timeText.text = $"Time-out {minutes:00}:{seconds:00}";
+                    break;
+                case 3:
+                    timeText.text = $"Survive! {minutes:00}:{seconds:00}";
+                    break;
+            }
 
             if (timeLeft <= 5f)
             {

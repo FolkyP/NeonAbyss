@@ -90,6 +90,10 @@ public class GameSettings : MonoBehaviour
 
     public float bossHealthMultiplier = 1f;
     public float bossDamageMultiplier = 1f;
+
+    private bool isInSettings = false;
+
+    public GameObject way;
     private void Update()
     {
         // 1) Bezpeèná null-check pro cutsceneManager
@@ -101,7 +105,12 @@ public class GameSettings : MonoBehaviour
         // 2) P musí fungovat i když èekáme na cutscenu/mezery — proto kontrolujeme ho døív.
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-            if (isGameOn || isGameStopped)
+            if (isInSettings)
+            {
+                ReturnFromSettings(); // optional: let Escape close settings instead
+                return;
+            }
+            if (isGameOn || isGameStopped || (cutsceneManager != null && cutsceneManager.isCutscenePlaying))
                 TogglePause();
             else
                         Debug.Log("P stisknuto, ale hra není aktivní (isGameOn==false).");
@@ -136,24 +145,40 @@ public class GameSettings : MonoBehaviour
             }
         }
     }
+
     private void TogglePause()
     {
+
+        bool isPausing = !isGameStopped; // true = we're about to pause
+
+        // Pause/resume cutscene director if active
+        if (cutsceneManager != null && cutsceneManager.isCutscenePlaying)
+        {
+            if (isPausing)
+                cutsceneManager.PauseCutscene();
+            else
+                cutsceneManager.ResumeCutscene();
+        }
         if (menuMid == null)
         {
             Debug.LogWarning("menuMid není pøiøazený v GameSettings.");
             return;
         }
 
-        if (menuMid.activeSelf)
+        if (menuMid.activeSelf) // closing menu = resuming
         {
             menuMid.SetActive(false);
             Time.timeScale = 1f;
             isGameStopped = false;
-            AudioSource[] allAudioSources = FindObjectsOfType<AudioSource>();
-            foreach (AudioSource source in allAudioSources)
+
+            if (cutsceneManager == null || !cutsceneManager.isCutscenePlaying)
             {
-                if (source != AudioSettings.Instance.uiSource && source.time != 0 && !source.isPlaying)
-                    source.UnPause();
+                AudioSource[] allAudioSources = FindObjectsOfType<AudioSource>();
+                foreach (AudioSource source in allAudioSources)
+                {
+                    if (source != AudioSettings.Instance.uiSource && source.time != 0 && !source.isPlaying)
+                        source.UnPause();
+                }
             }
         }
         else
@@ -289,6 +314,17 @@ public class GameSettings : MonoBehaviour
     }
     public void ReturnFromSettings()
     {
+        isInSettings = false;
+
+        bool isCutscenePaused = cutsceneManager != null && cutsceneManager.isCutscenePlaying;
+
+        if (isCutscenePaused)
+        {
+            settingsMenu.SetActive(false);
+            cutsceneManager.ResumeCutscene();
+            return;
+        }
+
         if (isGameOn)
         {
             settingsMenu.SetActive(false);
@@ -301,9 +337,20 @@ public class GameSettings : MonoBehaviour
             mainMenu.SetActive(true);
         }
     }
+
     public void SettingsOpen()
     {
-        if(isGameOn)
+        isInSettings = true;
+
+        bool isCutscenePaused = cutsceneManager != null && cutsceneManager.isCutscenePlaying;
+
+        if (isCutscenePaused)
+        {
+            settingsMenu.SetActive(true);
+            return;
+        }
+
+        if (isGameOn)
         {
             playerUI.SetActive(false);
             settingsMenu.SetActive(true);
@@ -313,7 +360,6 @@ public class GameSettings : MonoBehaviour
         {
             mainMenu.SetActive(false);
             settingsMenu.SetActive(true);
-
         }
     }
     public void ReturnFromSelect()
@@ -421,6 +467,7 @@ public class GameSettings : MonoBehaviour
 
     public void StartCountDown()
     {
+        way.SetActive(true);
         StartCoroutine(CountdownRoutine());
     }
 

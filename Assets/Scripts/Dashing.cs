@@ -25,6 +25,7 @@ public class Dashing : MonoBehaviour
     [Header("UI")]
     public GameObject dashButton;       // The button object (parent with children)
     public Image cooldownFillImage;
+    public GameObject dashImageCursor;
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -52,6 +53,8 @@ public class Dashing : MonoBehaviour
             {
                 cooldownFillImage.fillAmount = dashTimer / dashCooldown;
             }
+            if (dashImageCursor != null)
+                dashImageCursor.SetActive(false);
         }
         else
         {
@@ -62,6 +65,8 @@ public class Dashing : MonoBehaviour
             {
                 cooldownFillImage.fillAmount = 0f;
             }
+            if (dashImageCursor != null)
+                dashImageCursor.SetActive(true);
         }
 
 

@@ -1,4 +1,6 @@
+using System.Collections;
 using UnityEngine;
+
 
 [RequireComponent(typeof(Camera))]
 public class VignetteEffect : MonoBehaviour
@@ -45,5 +47,31 @@ public class VignetteEffect : MonoBehaviour
     {
         intensity = normalizedSpeed; // nebo mapujte k funkci, napø. exponenciálnì
         vignetteColor = c;
+    }
+
+    public void FlashColor(Color flashColor, float flashDuration = 0.3f)
+    {
+        StartCoroutine(FlashCoroutine(flashColor, flashDuration));
+    }
+
+    private IEnumerator FlashCoroutine(Color flashColor, float flashDuration)
+    {
+        Color originalColor = vignetteColor;
+        float originalIntensity = intensity;
+
+        vignetteColor = flashColor;
+        intensity = 0.6f;
+
+        float t = 0f;
+        while (t < 1f)
+        {
+            t += Time.deltaTime / flashDuration;
+            intensity = Mathf.Lerp(0.6f, originalIntensity, t);
+            vignetteColor = Color.Lerp(flashColor, originalColor, t);
+            yield return null;
+        }
+
+        intensity = originalIntensity;
+        vignetteColor = originalColor;
     }
 }

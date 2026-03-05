@@ -1324,7 +1324,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff08670912e2e1a4882df26d1574e6d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 160
+  maxHealth: 120
   currentHealth: 0
   gloryKillThreshold: 0.35
 --- !u!114 &1965485795646889977
@@ -1359,7 +1359,7 @@ MonoBehaviour:
   explosionMaterial: {fileID: 2100000, guid: be54d34830d75fc44b94a49e119fc1e5, type: 2}
   chaseRange: 90
   attackRange: 2
-  attackDamage: 5
+  attackDamage: 25
   attackCooldown: 1.25
   shootRange: 50
   rotationSpeed: 10
