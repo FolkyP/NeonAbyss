@@ -5,14 +5,15 @@ using UnityEngine;
 public class WaypointGuide : MonoBehaviour
 {
     public static WaypointGuide Instance;
-
+    [Header("Packet Settings")]
+    public Material packetMaterial;
     [Header("References")]
     public Transform player;
     public Transform generatorWaypoint;
     public Transform monitorWaypoint;
 
     [Header("Packet Settings")]
-    public float lineHeight = 1.5f;
+    public float lineHeight = 1f;
     public float packetSpeed = 6f;
     public float spawnInterval = 0.3f;   // time between each packet spawn
     public float packetWidth = 0.15f;
@@ -34,10 +35,9 @@ public class WaypointGuide : MonoBehaviour
     {
         if (!isActive || currentTarget == null || player == null) return;
 
-        Vector3 start = new Vector3(player.position.x, lineHeight, player.position.z);
-        Vector3 end = new Vector3(currentTarget.position.x, lineHeight, currentTarget.position.z);
+        Vector3 start = new Vector3(player.position.x, player.position.y, player.position.z);
+        Vector3 end = new Vector3(currentTarget.position.x, currentTarget.position.y, currentTarget.position.z);
 
-        // Move all active packets
         for (int i = activePackets.Count - 1; i >= 0; i--)
         {
             PacketBit p = activePackets[i];
@@ -63,6 +63,29 @@ public class WaypointGuide : MonoBehaviour
         }
     }
 
+    private void SpawnPacket()
+    {
+        if (currentTarget == null || player == null) return;
+
+        Vector3 start = new Vector3(player.position.x, player.position.y + lineHeight, player.position.z);
+        Vector3 end = new Vector3(currentTarget.position.x, currentTarget.position.y + lineHeight, currentTarget.position.z);
+        Vector3 dir = (end - start).normalized;
+
+        GameObject obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        Destroy(obj.GetComponent<Collider>());
+        obj.transform.position = start;
+        obj.transform.rotation = Quaternion.LookRotation(dir);
+        obj.transform.localScale = new Vector3(packetWidth, packetWidth, packetLength);
+
+        Renderer r = obj.GetComponent<Renderer>();
+        r.material = new Material(packetMaterial);
+        r.material.color = currentColor;
+        r.material.EnableKeyword("_EMISSION");
+        r.material.SetColor("_EmissionColor", currentColor);
+
+        activePackets.Add(new PacketBit { obj = obj, traveled = 0f });
+    }
+
     private IEnumerator SpawnLoop()
     {
         while (isActive)
@@ -72,28 +95,7 @@ public class WaypointGuide : MonoBehaviour
         }
     }
 
-    private void SpawnPacket()
-    {
-        if (currentTarget == null || player == null) return;
-
-        Vector3 start = new Vector3(player.position.x, player.position.y + lineHeight, player.position.z);
-        Vector3 end = new Vector3(currentTarget.position.x, currentTarget.position.y + lineHeight, currentTarget.position.z);
-        Vector3 dir = (end - start).normalized;
-
-        // Create the packet as a thin cube
-        GameObject obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        Destroy(obj.GetComponent<Collider>());
-        obj.transform.position = start;
-        obj.transform.rotation = Quaternion.LookRotation(dir);
-        obj.transform.localScale = new Vector3(packetWidth, packetWidth, packetLength);
-
-        // Color it
-        Renderer r = obj.GetComponent<Renderer>();
-        r.material = new Material(Shader.Find("Unlit/Color"));
-        r.material.color = currentColor;
-
-        activePackets.Add(new PacketBit { obj = obj, traveled = 0f });
-    }
+    
 
     private void ClearPackets()
     {

@@ -51077,6 +51077,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ec821628a94e7fb4fa4449c2b870bd47, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  packetMaterial: {fileID: 2100000, guid: 66a0f605c8082c544b07ce6b0818269d, type: 2}
   player: {fileID: 1968058711}
   generatorWaypoint: {fileID: 703387209}
   monitorWaypoint: {fileID: 1469960294}
